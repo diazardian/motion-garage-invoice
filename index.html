@@ -63,9 +63,9 @@
                                         <option value="BULLETPROOF TYRES|3600" data-search="bulletproof tyres brake type">BULLETPROOF TYRES - $3,600</option>
                                         <option value="VEHICLE WHEELS|540" data-search="vehicle wheels brake type">VEHICLE WHEELS - $540</option>
                                         <option value="TYRE SMOKE KIT|220" data-search="tyre smoke kit brake type">TYRE SMOKE KIT - $220</option>
-                                        <option value="CLUTCH REPLACEMENT|240" data-search="clutch replacement brake type">CLUTCH REPLACEMENT - $240</option>
                                     </optgroup>
                                     <optgroup label="ENGINE DRIVETRAIN">
+                                        <option value="CLUTCH REPLACEMENT|240" data-search="clutch replacement brake type">CLUTCH REPLACEMENT - $240</option>
                                         <option value="I4 ENGINE|3960" data-search="i4 engine drivetrain">I4 ENGINE - $3,960</option>
                                         <option value="V6 ENGINE|3960" data-search="v6 engine drivetrain">V6 ENGINE - $3,960</option>
                                         <option value="V8 ENGINE|7200" data-search="v8 engine drivetrain">V8 ENGINE - $7,200</option>
@@ -82,7 +82,7 @@
                                         <option value="EV COOLANT|100" data-search="ev coolant electric">EV COOLANT - $100</option>
                                     </optgroup>
                                     <optgroup label="PERFORMANCE">
-                                        <option value="PERFORMANCE PART|300" data-search="performance part">PERFORMANCE PART - $300</option>
+                                        <option value="PERFORMANCE PART|900" data-search="performance part">PERFORMANCE PART - $900</option>
                                         <option value="DRIFT TUNING KIT|1800" data-search="drift tuning kit performance">DRIFT TUNING KIT - $1,800</option>
                                         <option value="CERAMIC BRAKES|2700" data-search="ceramic brakes performance">CERAMIC BRAKES - $2,700</option>
                                         <option value="NITROUS BOTTLE|180" data-search="nitrous bottle performance">NITROUS BOTTLE - $180</option>
@@ -92,9 +92,9 @@
                                     <optgroup label="TOOL">
                                         <option value="MECH TABLET|180" data-search="mech tablet tool">MECH TABLET - $180</option>
                                         <option value="LIGHTING CONTROLLER|280" data-search="lighting controller tool">LIGHTING CONTROLLER - $280</option>
-                                        <option value="STANCING KIT|1440" data-search="stancing kit tool">STANCING KIT - $1,440</option>
                                     </optgroup>
                                     <optgroup label="VISUAL MODIF">
+                                        <option value="STANCING KIT|1440" data-search="stancing kit tool">STANCING KIT - $1,440</option>
                                         <option value="COSMETIC PART|180" data-search="cosmetic part visual modif">COSMETIC PART - $180</option>
                                         <option value="RESPRAY KIT|150" data-search="respray kit visual modif">RESPRAY KIT - $150</option>
                                         <option value="EXTRAS KIT|460" data-search="extras kit visual modif">EXTRAS KIT - $460</option>
@@ -122,11 +122,22 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="totalInvoice">Total Invoice:</label>
-                            <input type="number" id="totalInvoice" name="totalInvoice" step="0.01" required>
+                            <label for="taxRate">Tax Rate (%):</label>
+                            <input type="number" id="taxRate" name="taxRate" step="0.01" value="5" min="0" max="100" required>
                         </div>
                         <div class="form-group">
-                            <!-- Empty space for layout -->
+                            <label for="subtotal">Subtotal:</label>
+                            <input type="number" id="subtotal" name="subtotal" step="0.01" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taxAmount">Tax Amount:</label>
+                            <input type="number" id="taxAmount" name="taxAmount" step="0.01" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="totalInvoice">Total Invoice:</label>
+                            <input type="number" id="totalInvoice" name="totalInvoice" step="0.01" required>
                         </div>
                     </div>
                 </div>
@@ -158,7 +169,11 @@ Jenis Kendaraan : mobil
 Nama Montir     : Gobi Alexander
 Pengerjaan      : VEHICLE WHEELS 1, Extras
 Modal           : 0
-Total Invoice   : $2499.00```</pre>
+
+Subtotal        : $540.00
+Tax Rate        : 5.00%
+Tax Amount      : $27.00
+Total Invoice   : $567.00```</pre>
                 </div>
             </div>
         </div>

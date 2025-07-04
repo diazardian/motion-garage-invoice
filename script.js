@@ -128,6 +128,14 @@ function setupPengerjaanHandlers() {
             searchInput.focus();
         });
     }
+    
+    // Tax rate change listener
+    const taxRateInput = document.getElementById('taxRate');
+    if (taxRateInput) {
+        taxRateInput.addEventListener('input', function() {
+            updateTaxCalculations();
+        });
+    }
 }
 
 // Add pengerjaan item
@@ -196,14 +204,32 @@ function updatePengerjaanDisplay() {
         totalHargaSpan.textContent = `Total: $${totalHarga.toFixed(2)}`;
     }
     
-    // Auto-update total invoice
-    const totalInvoiceInput = document.getElementById('totalInvoice');
-    if (totalInvoiceInput) {
-        totalInvoiceInput.value = totalHarga.toFixed(2);
-    }
+    // Update tax calculations
+    updateTaxCalculations();
     
     // Update selected items display
     updateSelectedItemsDisplay();
+}
+
+// Update tax calculations
+function updateTaxCalculations() {
+    const taxRateInput = document.getElementById('taxRate');
+    const subtotalInput = document.getElementById('subtotal');
+    const taxAmountInput = document.getElementById('taxAmount');
+    const totalInvoiceInput = document.getElementById('totalInvoice');
+    
+    if (!taxRateInput || !subtotalInput || !taxAmountInput || !totalInvoiceInput) {
+        return;
+    }
+    
+    const subtotal = totalHarga;
+    const taxRate = parseFloat(taxRateInput.value) || 0;
+    const taxAmount = (subtotal * taxRate) / 100;
+    const totalWithTax = subtotal + taxAmount;
+    
+    subtotalInput.value = subtotal.toFixed(2);
+    taxAmountInput.value = taxAmount.toFixed(2);
+    totalInvoiceInput.value = totalWithTax.toFixed(2);
 }
 
 // Update selected items display with individual controls
@@ -355,6 +381,9 @@ form.addEventListener('submit', function(e) {
     
     // Format currency
     data.modal = parseFloat(data.modal).toFixed(2);
+    data.taxRate = parseFloat(data.taxRate).toFixed(2);
+    data.subtotal = parseFloat(data.subtotal).toFixed(2);
+    data.taxAmount = parseFloat(data.taxAmount).toFixed(2);
     data.totalInvoice = parseFloat(data.totalInvoice).toFixed(2);
     
     // Add to array
@@ -375,6 +404,9 @@ form.addEventListener('submit', function(e) {
     
     // Reset modal to 0
     document.getElementById('modal').value = '0';
+    
+    // Reset tax rate to 5
+    document.getElementById('taxRate').value = '5';
     
     // Reset pengerjaan
     selectedPengerjaan = [];
@@ -410,6 +442,9 @@ function displayData() {
                     <div><strong>Montir:</strong> ${item.namaMontir}</div>
                     <div><strong>Pengerjaan:</strong> ${item.pengerjaan}</div>
                     <div><strong>Modal:</strong> $${item.modal}</div>
+                    <div><strong>Subtotal:</strong> $${item.subtotal || '0.00'}</div>
+                    <div><strong>Tax Rate:</strong> ${item.taxRate || '5.00'}%</div>
+                    <div><strong>Tax Amount:</strong> $${item.taxAmount || '0.00'}</div>
                 </div>
             </div>
         `;
@@ -492,6 +527,9 @@ clearBtn.addEventListener('click', function() {
         // Reset modal to 0
         document.getElementById('modal').value = '0';
         
+        // Reset tax rate to 5
+        document.getElementById('taxRate').value = '5';
+        
         // Reset pengerjaan
         selectedPengerjaan = [];
         totalHarga = 0;
@@ -549,6 +587,10 @@ Jenis Kendaraan : ${item.jenisKendaraan}
 Nama Montir     : ${item.namaMontir}
 Pengerjaan      : ${item.pengerjaan}
 Modal           : ${item.modal}
+
+Subtotal        : $${item.subtotal || '0.00'}
+Tax Rate        : ${item.taxRate || '5.00'}%
+Tax Amount      : $${item.taxAmount || '0.00'}
 Total Invoice   : $${item.totalInvoice}\`\`\``;
     
     // Copy to clipboard
