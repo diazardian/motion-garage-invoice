@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Data Entry System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Motion Garage Invoice Data Entry System</h1>
+            <p>Input data invoice dan export ke format CSV untuk Discord</p>
+        </header>
+
+        <div class="form-container">
+            <form id="invoiceForm">
+                <div class="section">
+                    <h2>📝 Data Invoice</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nomor">Nomor:</label>
+                            <input type="number" id="nomor" name="nomor" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="namaClient">Nama Client:</label>
+                            <input type="text" id="namaClient" name="namaClient" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="jenisKendaraan">Jenis Kendaraan:</label>
+                            <input type="text" id="jenisKendaraan" name="jenisKendaraan" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="namaMontir">Nama Montir:</label>
+                            <input type="text" id="namaMontir" name="namaMontir" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pengerjaan">Pengerjaan:</label>
+                            <div class="pengerjaan-container">
+                                <div class="search-container">
+                                    <input type="text" id="searchPengerjaan" placeholder="🔍 Cari item pengerjaan..." class="search-input">
+                                    <button type="button" id="clearSearch" class="clear-search-btn">✖️</button>
+                                </div>
+                                <select id="pengerjaanSelect" class="pengerjaan-select" multiple size="8">
+                                    <optgroup label="SERVICES">
+                                        <option value="ENGINE OIL|30" data-search="engine oil services">ENGINE OIL - $30</option>
+                                        <option value="AIR FILTER|60" data-search="air filter services">AIR FILTER - $60</option>
+                                        <option value="SPARK PLUG|30" data-search="spark plug services">SPARK PLUG - $30</option>
+                                        <option value="CLEANING KIT|30" data-search="cleaning kit services">CLEANING KIT - $30</option>
+                                        <option value="DUCT TAPE|20" data-search="duct tape services">DUCT TAPE - $20</option>
+                                    </optgroup>
+                                    <optgroup label="BRAKE TYPE">
+                                        <option value="BRAKEPAD|210" data-search="brakepad brake type">BRAKEPAD - $210</option>
+                                        <option value="SUSPENSION PART|240" data-search="suspension part brake type">SUSPENSION PART - $240</option>
+                                        <option value="TYRE REPLACEMENT|210" data-search="tyre replacement brake type">TYRE REPLACEMENT - $210</option>
+                                        <option value="SLICK TYRES|360" data-search="slick tyres brake type">SLICK TYRES - $360</option>
+                                        <option value="SEMI SLICK TYRES|330" data-search="semi slick tyres brake type">SEMI SLICK TYRES - $330</option>
+                                        <option value="OFFROAD TYRES|290" data-search="offroad tyres brake type">OFFROAD TYRES - $290</option>
+                                        <option value="BULLETPROOF TYRES|3600" data-search="bulletproof tyres brake type">BULLETPROOF TYRES - $3,600</option>
+                                        <option value="VEHICLE WHEELS|540" data-search="vehicle wheels brake type">VEHICLE WHEELS - $540</option>
+                                        <option value="TYRE SMOKE KIT|220" data-search="tyre smoke kit brake type">TYRE SMOKE KIT - $220</option>
+                                        <option value="CLUTCH REPLACEMENT|240" data-search="clutch replacement brake type">CLUTCH REPLACEMENT - $240</option>
+                                    </optgroup>
+                                    <optgroup label="ENGINE DRIVETRAIN">
+                                        <option value="I4 ENGINE|3960" data-search="i4 engine drivetrain">I4 ENGINE - $3,960</option>
+                                        <option value="V6 ENGINE|3960" data-search="v6 engine drivetrain">V6 ENGINE - $3,960</option>
+                                        <option value="V8 ENGINE|7200" data-search="v8 engine drivetrain">V8 ENGINE - $7,200</option>
+                                        <option value="V12 ENGINE|14400" data-search="v12 engine drivetrain">V12 ENGINE - $14,400</option>
+                                        <option value="TURBOCHARGER|4500" data-search="turbocharger engine drivetrain">TURBOCHARGER - $4,500</option>
+                                        <option value="MANUAL GEARBOX|3060" data-search="manual gearbox engine drivetrain">MANUAL GEARBOX - $3,060</option>
+                                        <option value="AWD|3240" data-search="awd engine drivetrain">AWD - $3,240</option>
+                                        <option value="RWD|2700" data-search="rwd engine drivetrain">RWD - $2,700</option>
+                                        <option value="FWD|2160" data-search="fwd engine drivetrain">FWD - $2,160</option>
+                                    </optgroup>
+                                    <optgroup label="EV">
+                                        <option value="EV MOTOR|5400" data-search="ev motor electric">EV MOTOR - $5,400</option>
+                                        <option value="EV BATTERY|4500" data-search="ev battery electric">EV BATTERY - $4,500</option>
+                                        <option value="EV COOLANT|100" data-search="ev coolant electric">EV COOLANT - $100</option>
+                                    </optgroup>
+                                    <optgroup label="PERFORMANCE">
+                                        <option value="PERFORMANCE PART|300" data-search="performance part">PERFORMANCE PART - $300</option>
+                                        <option value="DRIFT TUNING KIT|1800" data-search="drift tuning kit performance">DRIFT TUNING KIT - $1,800</option>
+                                        <option value="CERAMIC BRAKES|2700" data-search="ceramic brakes performance">CERAMIC BRAKES - $2,700</option>
+                                        <option value="NITROUS BOTTLE|180" data-search="nitrous bottle performance">NITROUS BOTTLE - $180</option>
+                                        <option value="EMPTY NITROUS BOTTLE|40" data-search="empty nitrous bottle performance">EMPTY NITROUS BOTTLE - $40</option>
+                                        <option value="NITROUS INSTALL KIT|280" data-search="nitrous install kit performance">NITROUS INSTALL KIT - $280</option>
+                                    </optgroup>
+                                    <optgroup label="TOOL">
+                                        <option value="MECH TABLET|180" data-search="mech tablet tool">MECH TABLET - $180</option>
+                                        <option value="LIGHTING CONTROLLER|280" data-search="lighting controller tool">LIGHTING CONTROLLER - $280</option>
+                                        <option value="STANCING KIT|1440" data-search="stancing kit tool">STANCING KIT - $1,440</option>
+                                    </optgroup>
+                                    <optgroup label="VISUAL MODIF">
+                                        <option value="COSMETIC PART|180" data-search="cosmetic part visual modif">COSMETIC PART - $180</option>
+                                        <option value="RESPRAY KIT|150" data-search="respray kit visual modif">RESPRAY KIT - $150</option>
+                                        <option value="EXTRAS KIT|460" data-search="extras kit visual modif">EXTRAS KIT - $460</option>
+                                    </optgroup>
+                                </select>
+                                <div class="pengerjaan-controls">
+                                    <button type="button" id="addPengerjaan" class="add-btn">➕ Tambah Selected</button>
+                                    <div class="quantity-control">
+                                        <label for="itemQuantity">Qty:</label>
+                                        <input type="number" id="itemQuantity" value="1" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+                            <textarea id="pengerjaan" name="pengerjaan" rows="4" placeholder="Daftar pengerjaan akan muncul di sini..." required readonly></textarea>
+                            <div class="pengerjaan-actions">
+                                <button type="button" id="clearPengerjaan" class="clear-btn">🗑️ Clear All</button>
+                                <span id="totalHarga" class="total-harga">Total: $0</span>
+                            </div>
+                            <div id="selectedItems" class="selected-items"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal">Modal:</label>
+                            <input type="number" id="modal" name="modal" step="0.01" value="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="totalInvoice">Total Invoice:</label>
+                            <input type="number" id="totalInvoice" name="totalInvoice" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <!-- Empty space for layout -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">💾 Simpan Data</button>
+                    <!-- <button type="button" id="exportBtn" class="btn btn-secondary">📤 Export CSV</button> -->
+                    <button type="button" id="clearBtn" class="btn btn-danger">🗑️ Clear Form</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="data-container">
+            <h2>📊 Data Tersimpan</h2>
+            <div id="dataTable"></div>
+        </div>
+
+        <div class="export-container">
+            <h2>📋 Export Options</h2>
+            <div class="export-options">
+                <div class="export-section">
+                    <h3>📝 Export Data Individual</h3>
+                    <p>Untuk export data individual, gunakan tombol <strong>"📋 Copy ke Discord"</strong> pada setiap data di atas.</p>
+                    <p>Format yang akan di-copy:</p>
+                    <pre class="format-example">```Nomor           : 3
+Nama Client     : William Lottin
+Jenis Kendaraan : mobil
+
+Nama Montir     : Gobi Alexander
+Pengerjaan      : VEHICLE WHEELS 1, Extras
+Modal           : 0
+Total Invoice   : $2499.00```</pre>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© 2025 Motion Garage | Diaz Ardian. All rights reserved.</p>
+            <p>Created by <a href="https://github.com/diazardian" target="_blank">Gobi Alexander | Diaz Ardian</a></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
