@@ -580,7 +580,8 @@ function showSuccessMessage(message) {
 function exportSingleData(index) {
     const item = invoiceData[index];
     
-    const discordFormat = `\`\`\`Nomor           : ${item.nomor}
+    const discordFormat = `\`\`\`css
+Nomor           : ${item.nomor}
 Nama Client     : ${item.namaClient}
 Jenis Kendaraan : ${item.jenisKendaraan}
 
