@@ -1,6 +1,123 @@
 // Data storage
 let invoiceData = JSON.parse(localStorage.getItem('invoiceData')) || [];
 
+// Alert Functions
+// Queue system for multiple alerts
+let alertQueue = [];
+let currentAlert = null;
+
+function showAlert(type, message, duration = 3000) {
+    const alertId = type === 'success' ? 'alert' : 
+                   type === 'error' ? 'alertError' : 
+                   type === 'export' ? 'alertExport' : 'alert';
+    
+    // Add to queue
+    alertQueue.push({ type, message, duration, alertId });
+    
+    // Process queue if no current alert
+    if (!currentAlert) {
+        processAlertQueue();
+    }
+}
+
+function processAlertQueue() {
+    if (alertQueue.length === 0) {
+        currentAlert = null;
+        return;
+    }
+    
+    const { type, message, duration, alertId } = alertQueue.shift();
+    currentAlert = alertId;
+    
+    const alertElement = document.getElementById(alertId);
+    
+    if (!alertElement) {
+        console.error(`Alert element with ID ${alertId} not found`);
+        processAlertQueue(); // Process next in queue
+        return;
+    }
+    
+    // Update message content
+    const messageContent = alertElement.querySelector('strong').nextSibling;
+    messageContent.textContent = ` ${message}`;
+    
+    // Show alert
+    alertElement.style.display = 'block';
+    alertElement.classList.add('show');
+    
+    // Auto hide after duration
+    setTimeout(() => {
+        hideAlertWithAnimation(alertId);
+        setTimeout(processAlertQueue, 300); // Process next after animation
+    }, duration);
+}
+
+function hideAlertWithAnimation(alertId) {
+    const alertElement = document.getElementById(alertId);
+    if (alertElement) {
+        alertElement.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => {
+            alertElement.style.display = 'none';
+            alertElement.classList.remove('show');
+            alertElement.style.animation = '';
+        }, 300);
+    }
+}
+
+function hideAlert(alertId) {
+    const alertElement = document.getElementById(alertId);
+    if (alertElement) {
+        alertElement.style.display = 'none';
+        alertElement.classList.remove('show');
+    }
+}
+
+function showSuccessAlert(message, duration = 3000) {
+    showAlert('success', message, duration);
+}
+
+function showErrorAlert(message, duration = 5000) {
+    showAlert('error', message, duration);
+}
+
+function showExportAlert(message, duration = 3000) {
+    showAlert('export', message, duration);
+}
+
+// Enhanced showSuccessMessage function to use both old and new alert systems
+function showSuccessMessage(message) {
+    // Use the new alert system
+    showSuccessAlert(message);
+    
+    // Keep the old floating message for backward compatibility
+    const existingMessage = document.querySelector('.success-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'success-message show';
+    messageDiv.textContent = message;
+    
+    const formContainer = document.querySelector('.form-container');
+    formContainer.insertBefore(messageDiv, formContainer.firstChild);
+    
+    setTimeout(() => {
+        messageDiv.classList.remove('show');
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Enhanced error handling function
+function showErrorMessage(message) {
+    showErrorAlert(message);
+    
+    // Also show in console for debugging
+    console.error('Error:', message);
+}
+
 // DOM elements
 const form = document.getElementById('invoiceForm');
 const dataTable = document.getElementById('dataTable');
@@ -33,6 +150,9 @@ let totalHarga = 0;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded');
     
+    // Initialize alert close buttons
+    initializeAlertCloseButtons();
+    
     // Initialize elements first
     initializePengerjaanElements();
     
@@ -53,6 +173,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
+// Initialize alert close buttons
+function initializeAlertCloseButtons() {
+    const closeButtons = document.querySelectorAll('.alert .closebtn');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            hideAlertWithAnimation(this.parentElement.id);
+        });
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Hide all visible alerts
+            const visibleAlerts = document.querySelectorAll('.alert.show');
+            visibleAlerts.forEach(alert => {
+                hideAlertWithAnimation(alert.id);
+            });
+        }
+    });
+}
+
 // Setup pengerjaan handlers
 function setupPengerjaanHandlers() {
     // Check if elements exist
@@ -68,7 +209,7 @@ function setupPengerjaanHandlers() {
         const quantity = parseInt(itemQuantityInput.value) || 1;
         
         if (selectedOptions.length === 0) {
-            alert('Silakan pilih item pengerjaan terlebih dahulu!');
+            showErrorMessage('Silakan pilih item pengerjaan terlebih dahulu!');
             return;
         }
         
@@ -79,14 +220,24 @@ function setupPengerjaanHandlers() {
         // Clear selection
         pengerjaanSelect.selectedIndex = -1;
         itemQuantityInput.value = 1;
+        
+        // Show success message
+        showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
     });
     
     // Clear pengerjaan
     clearPengerjaanBtn.addEventListener('click', function() {
         console.log('Clear button clicked');
-        selectedPengerjaan = [];
-        totalHarga = 0;
-        updatePengerjaanDisplay();
+        if (selectedPengerjaan.length > 0) {
+            if (confirm('Apakah Anda yakin ingin menghapus semua item pengerjaan?')) {
+                selectedPengerjaan = [];
+                totalHarga = 0;
+                updatePengerjaanDisplay();
+                showSuccessAlert('Semua item pengerjaan berhasil dihapus!');
+            }
+        } else {
+            showErrorMessage('Tidak ada item pengerjaan yang perlu dihapus!');
+        }
     });
     
     // Enter key on quantity input
@@ -146,7 +297,7 @@ function addPengerjaanItem(value, quantity = 1) {
     const parts = value.split('|');
     if (parts.length !== 2) {
         console.error('Invalid format:', value);
-        alert('Format tidak valid. Pastikan format: "NAMA|HARGA"');
+        showErrorMessage('Format tidak valid. Pastikan format: "NAMA|HARGA"');
         return;
     }
     
@@ -368,36 +519,48 @@ function quickSearch(category) {
 form.addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const formData = new FormData(form);
-    const data = {};
-    
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
+    try {
+        const formData = new FormData(form);
+        const data = {};
+        
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        // Validate required fields
+        if (!data.nomor || !data.namaClient || !data.jenisKendaraan || !data.namaMontir || !data.pengerjaan) {
+            showErrorMessage('Semua field wajib diisi!');
+            return;
+        }
+        
+        // Add timestamp
+        data.timestamp = new Date().toISOString();
+        data.id = Date.now().toString();
+        
+        // Format currency
+        data.modal = parseFloat(data.modal).toFixed(2);
+        data.taxRate = parseFloat(data.taxRate).toFixed(2);
+        data.subtotal = parseFloat(data.subtotal).toFixed(2);
+        data.taxAmount = parseFloat(data.taxAmount).toFixed(2);
+        data.totalInvoice = parseFloat(data.totalInvoice).toFixed(2);
+        
+        // Add to array
+        invoiceData.push(data);
+        
+        // Save to localStorage
+        localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
+        
+        // Update display
+        displayData();
+        // generateCSV();
+        
+        // Show success message
+        showSuccessMessage('Data berhasil disimpan!');
+        
+    } catch (error) {
+        console.error('Error saving data:', error);
+        showErrorMessage('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
     }
-    
-    // Add timestamp
-    data.timestamp = new Date().toISOString();
-    data.id = Date.now().toString();
-    
-    // Format currency
-    data.modal = parseFloat(data.modal).toFixed(2);
-    data.taxRate = parseFloat(data.taxRate).toFixed(2);
-    data.subtotal = parseFloat(data.subtotal).toFixed(2);
-    data.taxAmount = parseFloat(data.taxAmount).toFixed(2);
-    data.totalInvoice = parseFloat(data.totalInvoice).toFixed(2);
-    
-    // Add to array
-    invoiceData.push(data);
-    
-    // Save to localStorage
-    localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
-    
-    // Update display
-    displayData();
-    // generateCSV();
-    
-    // Show success message
-    showSuccessMessage('Data berhasil disimpan!');
     
     // Reset form
     form.reset();
@@ -522,65 +685,51 @@ clearBtn.addEventListener('click', function() {
     console.log('Clear button clicked');
     
     if (confirm('Apakah Anda yakin ingin menghapus semua data form?')) {
-        form.reset();
-        
-        // Reset modal to 0
-        document.getElementById('modal').value = '0';
-        
-        // Reset tax rate to 5
-        document.getElementById('taxRate').value = '5';
-        
-        // Reset pengerjaan
-        selectedPengerjaan = [];
-        totalHarga = 0;
-        updatePengerjaanDisplay();
-        
-        showSuccessMessage('Form berhasil di-reset!');
+        try {
+            form.reset();
+            
+            // Reset modal to 0
+            document.getElementById('modal').value = '0';
+            
+            // Reset tax rate to 5
+            document.getElementById('taxRate').value = '5';
+            
+            // Reset pengerjaan
+            selectedPengerjaan = [];
+            totalHarga = 0;
+            updatePengerjaanDisplay();
+            
+            showSuccessMessage('Form berhasil di-reset!');
+        } catch (error) {
+            console.error('Error clearing form:', error);
+            showErrorMessage('Terjadi kesalahan saat mereset form. Silakan coba lagi.');
+        }
     }
 });
 
 // Delete item function
 function deleteItem(index) {
     if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-        invoiceData.splice(index, 1);
-        localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
-        displayData();
-        generateCSV();
-        showSuccessMessage('Data berhasil dihapus!');
+        try {
+            const deletedItem = invoiceData[index];
+            invoiceData.splice(index, 1);
+            localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
+            displayData();
+            // generateCSV();
+            showSuccessMessage(`Data ${deletedItem.namaClient} berhasil dihapus!`);
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            showErrorMessage('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
+        }
     }
-}
-
-// Show success message
-function showSuccessMessage(message) {
-    // Remove existing message
-    const existingMessage = document.querySelector('.success-message');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-    
-    // Create new message
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'success-message show';
-    messageDiv.textContent = message;
-    
-    // Insert at top of form container
-    const formContainer = document.querySelector('.form-container');
-    formContainer.insertBefore(messageDiv, formContainer.firstChild);
-    
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-        messageDiv.classList.remove('show');
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 300);
-    }, 3000);
 }
 
 // Export single data for Discord
 function exportSingleData(index) {
-    const item = invoiceData[index];
-    
-    const discordFormat = `\`\`\`css
+    try {
+        const item = invoiceData[index];
+        
+        const discordFormat = `\`\`\`css
 Nomor           : ${item.nomor}
 Nama Client     : ${item.namaClient}
 Jenis Kendaraan : ${item.jenisKendaraan}
@@ -593,11 +742,10 @@ Subtotal        : $${item.subtotal || '0.00'}
 Tax Rate        : ${item.taxRate || '5.00'}%
 Tax Amount      : $${item.taxAmount || '0.00'}
 Total Invoice   : $${item.totalInvoice}\`\`\``;
-    
-    // Copy to clipboard
-    try {
+        
+        // Copy to clipboard
         navigator.clipboard.writeText(discordFormat).then(function() {
-            showSuccessMessage(`Data ${item.namaClient} berhasil di-copy untuk Discord!`);
+            showExportAlert(`Data ${item.namaClient} berhasil di-copy untuk Discord!`);
         }).catch(function() {
             // Fallback method
             const textArea = document.createElement('textarea');
@@ -606,12 +754,11 @@ Total Invoice   : $${item.totalInvoice}\`\`\``;
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            showSuccessMessage(`Data ${item.namaClient} berhasil di-copy untuk Discord!`);
+            showExportAlert(`Data ${item.namaClient} berhasil di-copy untuk Discord!`);
         });
-    } catch (err) {
-        // Show in textarea for manual copy
-        // csvOutput.value = discordFormat;
-        showSuccessMessage(`Format Discord untuk ${item.namaClient} ditampilkan di textarea. Silakan copy manual.`);
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        showErrorMessage('Terjadi kesalahan saat mengexport data. Silakan coba lagi.');
     }
 }
 

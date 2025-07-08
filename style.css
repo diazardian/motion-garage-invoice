@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #323232 0%, #272727 100%);
     min-height: 100vh;
     padding: 20px;
 }
@@ -14,14 +14,14 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
+    background: rgb(77, 77, 77);
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #6b6b6b 0%, #a1a1a1 100%);
     color: white;
     padding: 30px;
     text-align: center;
@@ -163,13 +163,13 @@ header p {
 .data-container,
 .export-container {
     padding: 30px;
-    background: #f8f9fa;
+    background: #555555;
     border-top: 1px solid #e0e0e0;
 }
 
 .data-container h2,
 .export-container h2 {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 20px;
     font-size: 1.5rem;
     font-weight: 600;
@@ -582,14 +582,109 @@ header p {
     overflow-x: auto;
 }
 
+/* Alert System Styles */
+.alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 300px;
+    max-width: 500px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.alert.show {
+    display: block;
+}
+
+.alert strong {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* Success Alert (Info) */
+.alert:not(.error):not(.export) {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+/* Error Alert */
+.alert.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Export Alert */
+.alert.export {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+/* Close Button */
+.alert .closebtn {
+    margin-left: 15px;
+    color: inherit;
+    font-weight: bold;
+    float: right;
+    font-size: 22px;
+    line-height: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.alert .closebtn:hover {
+    opacity: 0.6;
+}
+
+/* Animation */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .export-options {
-        grid-template-columns: 1fr;
+    .alert {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
     }
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .export-options {
+        grid-template-columns: 1fr;
+    }
+    
     .form-row {
         grid-template-columns: 1fr;
     }
@@ -658,4 +753,9 @@ header p {
     font-size: 0.9rem;
     color: #666;
     border-top: 1px solid #e0e0e0;
+}
+
+ul.a {
+    font-size: 12px;
+    list-style-position: inside;
 }
