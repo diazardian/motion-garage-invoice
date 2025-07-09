@@ -131,6 +131,8 @@ let pengerjaanSelect, pengerjaanTextarea, addPengerjaanBtn, clearPengerjaanBtn, 
 
 // Initialize pengerjaan elements
 function initializePengerjaanElements() {
+    console.log('Initializing pengerjaan elements...');
+    
     pengerjaanSelect = document.getElementById('pengerjaanSelect');
     pengerjaanTextarea = document.getElementById('pengerjaan');
     addPengerjaanBtn = document.getElementById('addPengerjaan');
@@ -140,6 +142,28 @@ function initializePengerjaanElements() {
     selectedItemsDiv = document.getElementById('selectedItems');
     searchInput = document.getElementById('searchPengerjaan');
     clearSearchBtn = document.getElementById('clearSearch');
+    
+    // Log which elements were found
+    console.log('Elements found:');
+    console.log('- pengerjaanSelect:', !!pengerjaanSelect);
+    console.log('- addPengerjaanBtn:', !!addPengerjaanBtn);
+    console.log('- clearPengerjaanBtn:', !!clearPengerjaanBtn);
+    console.log('- itemQuantityInput:', !!itemQuantityInput);
+    
+    // If key elements are missing, try to find them again after a delay
+    if (!pengerjaanSelect || !addPengerjaanBtn) {
+        console.warn('Key elements not found, will retry...');
+        setTimeout(() => {
+            pengerjaanSelect = pengerjaanSelect || document.getElementById('pengerjaanSelect');
+            addPengerjaanBtn = addPengerjaanBtn || document.getElementById('addPengerjaan');
+            clearPengerjaanBtn = clearPengerjaanBtn || document.getElementById('clearPengerjaan');
+            itemQuantityInput = itemQuantityInput || document.getElementById('itemQuantity');
+            
+            console.log('Retry - Elements found:');
+            console.log('- pengerjaanSelect:', !!pengerjaanSelect);
+            console.log('- addPengerjaanBtn:', !!addPengerjaanBtn);
+        }, 200);
+    }
 }
 
 // Arrays untuk menyimpan pengerjaan dan harga
@@ -153,24 +177,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize alert close buttons
     initializeAlertCloseButtons();
     
+    // Initialize image upload
+    initializeImageUpload();
+    
     // Initialize elements first
     initializePengerjaanElements();
     
-    // Wait a bit to ensure all elements are loaded
+    // Wait a bit to ensure all elements are loaded, then setup handlers
     setTimeout(function() {
         console.log('Setting up pengerjaan handlers...');
         setupPengerjaanHandlers();
         
-        // Test elements
-        // console.log('pengerjaanSelect:', pengerjaanSelect);
-        // console.log('addPengerjaanBtn:', addPengerjaanBtn);
-        // console.log('clearPengerjaanBtn:', clearPengerjaanBtn);
-        // console.log('pengerjaanTextarea:', pengerjaanTextarea);
-        // console.log('totalHargaSpan:', totalHargaSpan);
-        
         displayData();
         // generateCSV();
-    }, 100);
+    }, 200);
+    
+    // Additional retry mechanism for critical elements
+    setTimeout(function() {
+        if (!addPengerjaanBtn || !pengerjaanSelect) {
+            console.log('Retrying element initialization...');
+            initializePengerjaanElements();
+            setupPengerjaanHandlers();
+        }
+        
+        // Always ensure backup handler is in place
+        ensureButtonWorks();
+    }, 500);
 });
 
 // Initialize alert close buttons
@@ -199,14 +231,22 @@ function setupPengerjaanHandlers() {
     // Check if elements exist
     if (!addPengerjaanBtn || !clearPengerjaanBtn || !pengerjaanSelect) {
         console.error('Pengerjaan elements not found');
+        console.log('addPengerjaanBtn:', addPengerjaanBtn);
+        console.log('clearPengerjaanBtn:', clearPengerjaanBtn);
+        console.log('pengerjaanSelect:', pengerjaanSelect);
         return;
     }
+    
+    console.log('Setting up pengerjaan handlers - elements found');
     
     // Add pengerjaan
     addPengerjaanBtn.addEventListener('click', function() {
         console.log('Add button clicked');
         const selectedOptions = Array.from(pengerjaanSelect.selectedOptions);
         const quantity = parseInt(itemQuantityInput.value) || 1;
+        
+        console.log('Selected options:', selectedOptions.length);
+        console.log('Quantity:', quantity);
         
         if (selectedOptions.length === 0) {
             showErrorMessage('Silakan pilih item pengerjaan terlebih dahulu!');
@@ -533,6 +573,11 @@ form.addEventListener('submit', function(e) {
             return;
         }
         
+        // Add uploaded image data if exists
+        if (uploadedImageData) {
+            data.billScreenshot = uploadedImageData;
+        }
+        
         // Add timestamp
         data.timestamp = new Date().toISOString();
         data.id = Date.now().toString();
@@ -575,6 +620,11 @@ form.addEventListener('submit', function(e) {
     selectedPengerjaan = [];
     totalHarga = 0;
     updatePengerjaanDisplay();
+    
+    // Reset uploaded image
+    if (uploadedImageData) {
+        removeImage();
+    }
 });
 
 // Display data function
@@ -588,6 +638,7 @@ function displayData() {
     
     invoiceData.forEach((item, index) => {
         const statusClass = 'status-active';
+        const hasImage = item.billScreenshot && item.billScreenshot.data;
         
         html += `
             <div class="data-item">
@@ -596,7 +647,8 @@ function displayData() {
                     <div><strong>Client: ${item.namaClient}</strong></div>
                     <div><strong>Total: $${item.totalInvoice}</strong></div>
                     <div class="action-buttons">
-                        <button class="export-single-btn" onclick="exportSingleData(${index})">📋 Copy ke Discord</button>
+                        <button class="export-single-btn" onclick="exportSingleData(${index})">📋 Copy Text</button>
+                        ${hasImage ? `<button class="copy-with-image-btn" onclick="copyWithImage(${index})">🖼️ Copy dengan Gambar</button>` : ''}
                         <button class="delete-btn" onclick="deleteItem(${index})">🗑️ Hapus</button>
                     </div>
                 </div>
@@ -605,9 +657,31 @@ function displayData() {
                     <div><strong>Montir:</strong> ${item.namaMontir}</div>
                     <div><strong>Pengerjaan:</strong> ${item.pengerjaan}</div>
                     <div><strong>Modal:</strong> $${item.modal}</div>
+                    <div class="bill-number-section">
+                        <strong>💳 Bill Number:</strong>
+                        <div class="bill-input-container">
+                            <input type="text" 
+                                   id="billInput_${index}" 
+                                   class="bill-input" 
+                                   value="${item.billNumber || ''}" 
+                                   placeholder="Masukkan bill number..."
+                                   onchange="updateBillNumber(${index}, this.value)"
+                                   onblur="saveBillNumber(${index}, this.value)">
+                            <button class="update-bill-btn" onclick="focusBillInput(${index})">✏️ Edit</button>
+                        </div>
+                    </div>
                     <div><strong>Subtotal:</strong> $${item.subtotal || '0.00'}</div>
                     <div><strong>Tax Rate:</strong> ${item.taxRate || '5.00'}%</div>
                     <div><strong>Tax Amount:</strong> $${item.taxAmount || '0.00'}</div>
+                    ${hasImage ? `
+                    <div class="bill-screenshot">
+                        <strong>Bill Screenshot:</strong>
+                        <div class="saved-image-preview">
+                            <img src="${item.billScreenshot.data}" alt="Bill Screenshot" onclick="showImageModal('${item.billScreenshot.data}', '${item.billScreenshot.name}')">
+                            <small>${item.billScreenshot.name} (${(item.billScreenshot.size / 1024).toFixed(1)} KB)</small>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -699,6 +773,11 @@ clearBtn.addEventListener('click', function() {
             totalHarga = 0;
             updatePengerjaanDisplay();
             
+            // Reset uploaded image
+            if (uploadedImageData) {
+                removeImage();
+            }
+            
             showSuccessMessage('Form berhasil di-reset!');
         } catch (error) {
             console.error('Error clearing form:', error);
@@ -737,6 +816,7 @@ Jenis Kendaraan : ${item.jenisKendaraan}
 Nama Montir     : ${item.namaMontir}
 Pengerjaan      : ${item.pengerjaan}
 Modal           : ${item.modal}
+${item.billNumber ? `Bill Number     : ${item.billNumber}` : ''}
 
 Subtotal        : $${item.subtotal || '0.00'}
 Tax Rate        : ${item.taxRate || '5.00'}%
@@ -810,3 +890,479 @@ function generateAdvancedCSV() {
 //     csvOutput.value = generateAdvancedCSV();
 //     showSuccessMessage('CSV berhasil di-generate! Siap untuk Discord.');
 // });
+
+// Image upload functionality
+let uploadedImageData = null;
+
+// Initialize image upload functionality
+function initializeImageUpload() {
+    const fileInput = document.getElementById('billScreenshot');
+    const uploadContainer = document.querySelector('.file-upload-container');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const removeBtn = document.getElementById('removeImage');
+
+    if (!fileInput || !uploadContainer || !uploadPrompt || !imagePreview || !previewImg || !removeBtn) {
+        console.error('Image upload elements not found');
+        return;
+    }
+
+    // File input change handler
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // Drag and drop handlers
+    uploadContainer.addEventListener('dragover', handleDragOver);
+    uploadContainer.addEventListener('dragleave', handleDragLeave);
+    uploadContainer.addEventListener('drop', handleFileDrop);
+    
+    // Click to upload
+    uploadPrompt.addEventListener('click', () => fileInput.click());
+    
+    // Remove image
+    removeBtn.addEventListener('click', removeImage);
+    
+    // Clipboard paste functionality
+    document.addEventListener('paste', handleClipboardPaste);
+    uploadContainer.addEventListener('paste', handleClipboardPaste);
+}
+
+function handleClipboardPaste(e) {
+    // Only handle paste if focus is on upload area or no specific focus
+    const isUploadAreaFocused = e.target.closest('.file-upload-container') || 
+                                e.target === document.body ||
+                                !e.target.closest('input, textarea');
+    
+    if (!isUploadAreaFocused) return;
+    
+    const items = e.clipboardData.items;
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        if (item.type.indexOf('image') !== -1) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            
+            if (file) {
+                processImageFile(file);
+                showSuccessAlert('Gambar berhasil di-paste dari clipboard!');
+            }
+            break;
+        }
+    }
+}
+
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) {
+        processImageFile(file);
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('dragover');
+}
+
+function handleFileDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type.startsWith('image/')) {
+            processImageFile(file);
+        } else {
+            showErrorAlert('File yang dipilih bukan gambar. Silakan pilih file JPG, PNG, atau GIF.');
+        }
+    }
+}
+
+function processImageFile(file) {
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+        showErrorAlert('Ukuran file terlalu besar. Maksimal 5MB.');
+        return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showErrorAlert('Format file tidak didukung. Gunakan JPG, PNG, atau GIF.');
+        return;
+    }
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        uploadedImageData = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: e.target.result
+        };
+        
+        displayImagePreview(e.target.result, file);
+        showSuccessAlert(`Gambar ${file.name} berhasil diupload!`);
+    };
+    
+    reader.onerror = function() {
+        showErrorAlert('Gagal membaca file gambar. Silakan coba lagi.');
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+function displayImagePreview(dataUrl, file) {
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    previewImg.src = dataUrl;
+    uploadPrompt.style.display = 'none';
+    imagePreview.style.display = 'block';
+    
+    // Add file info
+    let infoDiv = document.querySelector('.image-info');
+    if (!infoDiv) {
+        infoDiv = document.createElement('div');
+        infoDiv.className = 'image-info';
+        imagePreview.appendChild(infoDiv);
+    }
+    
+    infoDiv.innerHTML = `
+        <strong>${file.name}</strong><br>
+        Size: ${(file.size / 1024).toFixed(1)} KB | Type: ${file.type}
+    `;
+}
+
+function removeImage() {
+    uploadedImageData = null;
+    
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const imagePreview = document.getElementById('imagePreview');
+    const fileInput = document.getElementById('billScreenshot');
+    
+    uploadPrompt.style.display = 'block';
+    imagePreview.style.display = 'none';
+    fileInput.value = '';
+    
+    const infoDiv = document.querySelector('.image-info');
+    if (infoDiv) {
+        infoDiv.remove();
+    }
+    
+    showSuccessAlert('Gambar berhasil dihapus!');
+}
+
+// Copy data with image functionality
+async function copyWithImage(index) {
+    try {
+        const item = invoiceData[index];
+        
+        if (!item.billScreenshot || !item.billScreenshot.data) {
+            showErrorMessage('Tidak ada gambar yang tersedia untuk item ini.');
+            return;
+        }
+        
+        const textData = `\`\`\`css
+Nomor           : ${item.nomor}
+Nama Client     : ${item.namaClient}
+Jenis Kendaraan : ${item.jenisKendaraan}
+
+Nama Montir     : ${item.namaMontir}
+Pengerjaan      : ${item.pengerjaan}
+Modal           : ${item.modal}
+${item.billNumber ? `Bill Number     : ${item.billNumber}` : ''}
+
+Subtotal        : $${item.subtotal || '0.00'}
+Tax Rate        : ${item.taxRate || '5.00'}%
+Tax Amount      : $${item.taxAmount || '0.00'}
+Total Invoice   : $${item.totalInvoice}\`\`\``;
+        
+        // Convert base64 to blob
+        const response = await fetch(item.billScreenshot.data);
+        const blob = await response.blob();
+        
+        // Try using the modern Clipboard API with both text and image
+        if (navigator.clipboard && navigator.clipboard.write) {
+            const clipboardItems = [
+                new ClipboardItem({
+                    'text/plain': new Blob([textData], { type: 'text/plain' }),
+                    [blob.type]: blob
+                })
+            ];
+            
+            await navigator.clipboard.write(clipboardItems);
+            showExportAlert(`Data dan gambar ${item.namaClient} berhasil di-copy!`);
+        } else {
+            // Fallback: copy text only and show image separately
+            await navigator.clipboard.writeText(textData);
+            showImageForManualCopy(item.billScreenshot.data, item.billScreenshot.name);
+            showExportAlert(`Text berhasil di-copy! Gambar ditampilkan untuk copy manual.`);
+        }
+        
+    } catch (error) {
+        console.error('Error copying with image:', error);
+        
+        // Final fallback: show both text and image for manual copy
+        const item = invoiceData[index];
+        const textData = `\`\`\`css
+Nomor           : ${item.nomor}
+Nama Client     : ${item.namaClient}
+Jenis Kendaraan : ${item.jenisKendaraan}
+
+Nama Montir     : ${item.namaMontir}
+Pengerjaan      : ${item.pengerjaan}
+Modal           : ${item.modal}
+${item.billNumber ? `Bill Number     : ${item.billNumber}` : ''}
+
+Subtotal        : $${item.subtotal || '0.00'}
+Tax Rate        : ${item.taxRate || '5.00'}%
+Tax Amount      : $${item.taxAmount || '0.00'}
+Total Invoice   : $${item.totalInvoice}\`\`\``;
+        
+        showTextAndImageModal(textData, item.billScreenshot.data, item.billScreenshot.name);
+        showErrorMessage('Copy otomatis gagal. Silakan copy manual dari popup yang muncul.');
+    }
+}
+
+// Show image modal for viewing
+function showImageModal(imageSrc, imageName) {
+    const modal = createModal();
+    modal.innerHTML = `
+        <div class="modal-content image-modal">
+            <div class="modal-header">
+                <h3>📸 ${imageName}</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <img src="${imageSrc}" alt="${imageName}" style="width: 100%; height: auto; max-height: 70vh; object-fit: contain;">
+                <div class="modal-actions">
+                    <button onclick="downloadImage('${imageSrc}', '${imageName}')" class="btn btn-primary">💾 Download</button>
+                    <button onclick="copyImageToClipboard('${imageSrc}')" class="btn btn-secondary">📋 Copy Image</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setupModalEvents(modal);
+}
+
+// Show image for manual copy
+function showImageForManualCopy(imageSrc, imageName) {
+    const modal = createModal();
+    modal.innerHTML = `
+        <div class="modal-content image-modal">
+            <div class="modal-header">
+                <h3>📸 Copy Gambar Manual</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Text sudah di-copy ke clipboard. Silakan copy gambar di bawah ini secara manual:</p>
+                <img src="${imageSrc}" alt="${imageName}" style="width: 100%; height: auto; max-height: 60vh; object-fit: contain; border: 2px solid #667eea; border-radius: 8px;">
+                <div class="modal-actions">
+                    <button onclick="copyImageToClipboard('${imageSrc}')" class="btn btn-primary">📋 Copy Image</button>
+                    <button onclick="downloadImage('${imageSrc}', '${imageName}')" class="btn btn-secondary">💾 Download</button>
+                </div>
+                <small style="color: #666; margin-top: 10px; display: block;">
+                    Tip: Klik kanan pada gambar → "Copy Image" untuk browser yang mendukung
+                </small>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setupModalEvents(modal);
+}
+
+// Show text and image modal for manual copy
+function showTextAndImageModal(textData, imageSrc, imageName) {
+    const modal = createModal();
+    modal.innerHTML = `
+        <div class="modal-content text-image-modal">
+            <div class="modal-header">
+                <h3>📋 Copy Manual - Text & Image</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="copy-section">
+                    <h4>📝 Text Data:</h4>
+                    <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">${textData}</textarea>
+                    <button onclick="copyTextFromModal(this)" class="btn btn-primary" style="margin-top: 10px;">📋 Copy Text</button>
+                </div>
+                <div class="copy-section" style="margin-top: 20px;">
+                    <h4>📸 Image:</h4>
+                    <img src="${imageSrc}" alt="${imageName}" style="width: 100%; height: auto; max-height: 300px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px;">
+                    <div class="modal-actions" style="margin-top: 10px;">
+                        <button onclick="copyImageToClipboard('${imageSrc}')" class="btn btn-primary">📋 Copy Image</button>
+                        <button onclick="downloadImage('${imageSrc}', '${imageName}')" class="btn btn-secondary">💾 Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setupModalEvents(modal);
+}
+
+// Utility functions for modal
+function createModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+    `;
+    return modal;
+}
+
+function setupModalEvents(modal) {
+    const closeBtn = modal.querySelector('.close-modal');
+    if (closeBtn) {
+        closeBtn.onclick = () => modal.remove();
+    }
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    };
+    
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    });
+}
+
+// Copy image to clipboard
+async function copyImageToClipboard(imageSrc) {
+    try {
+        const response = await fetch(imageSrc);
+        const blob = await response.blob();
+        
+        if (navigator.clipboard && navigator.clipboard.write) {
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    [blob.type]: blob
+                })
+            ]);
+            showSuccessAlert('Gambar berhasil di-copy ke clipboard!');
+        } else {
+            throw new Error('Clipboard API not supported');
+        }
+    } catch (error) {
+        console.error('Error copying image:', error);
+        showErrorMessage('Copy gambar tidak didukung di browser ini. Silakan klik kanan → Copy Image atau download gambar.');
+    }
+}
+
+// Download image
+function downloadImage(imageSrc, imageName) {
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = imageName || 'bill-screenshot.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showSuccessAlert('Gambar berhasil didownload!');
+}
+
+// Copy text from modal
+function copyTextFromModal(button) {
+    const textarea = button.parentElement.querySelector('textarea');
+    textarea.select();
+    document.execCommand('copy');
+    showSuccessAlert('Text berhasil di-copy!');
+}
+
+// Bill number management functions
+function updateBillNumber(index, value) {
+    if (invoiceData[index]) {
+        invoiceData[index].billNumber = value;
+    }
+}
+
+function saveBillNumber(index, value) {
+    if (invoiceData[index]) {
+        invoiceData[index].billNumber = value;
+        localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
+        
+        if (value.trim()) {
+            showSuccessAlert('Bill number berhasil disimpan!');
+        }
+    }
+}
+
+function focusBillInput(index) {
+    const billInput = document.getElementById(`billInput_${index}`);
+    if (billInput) {
+        billInput.focus();
+        billInput.select();
+    }
+}
+
+// Fallback function to ensure button works
+function ensureButtonWorks() {
+    const addBtn = document.getElementById('addPengerjaan');
+    const selectEl = document.getElementById('pengerjaanSelect');
+    const quantityInput = document.getElementById('itemQuantity');
+    
+    if (addBtn && selectEl && quantityInput) {
+        // Remove any existing listeners to avoid duplicates
+        addBtn.onclick = null;
+        
+        // Add direct onclick handler as backup
+        addBtn.onclick = function() {
+            console.log('Backup handler triggered');
+            const selectedOptions = Array.from(selectEl.selectedOptions);
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            if (selectedOptions.length === 0) {
+                showErrorAlert('Silakan pilih item pengerjaan terlebih dahulu!');
+                return;
+            }
+            
+            selectedOptions.forEach(option => {
+                addPengerjaanItem(option.value, quantity);
+            });
+            
+            // Clear selection
+            selectEl.selectedIndex = -1;
+            quantityInput.value = 1;
+            
+            showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
+        };
+        
+        console.log('Backup handler attached to add button');
+    }
+}
+
+// Call the fallback function after DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    ensureButtonWorks();
+});
