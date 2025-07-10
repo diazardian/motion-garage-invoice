@@ -605,7 +605,7 @@ header p {
 }
 
 .file-upload-container::after {
-    content: "💡 Tip: Anda juga bisa paste gambar langsung dengan Ctrl+V";
+    content: "💡 Tip: kamu juga bisa paste gambar langsung dengan Ctrl+V";
     position: absolute;
     bottom: 5px;
     left: 50%;

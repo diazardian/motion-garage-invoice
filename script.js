@@ -125,6 +125,7 @@ const csvOutput = document.getElementById('csvOutput');
 const exportBtn = document.getElementById('exportBtn');
 const copyBtn = document.getElementById('copyBtn');
 const clearBtn = document.getElementById('clearBtn');
+const deleteAllBtn = document.getElementById('deleteAllBtn');
 
 // Pengerjaan elements
 let pengerjaanSelect, pengerjaanTextarea, addPengerjaanBtn, clearPengerjaanBtn, totalHargaSpan, itemQuantityInput, selectedItemsDiv, searchInput, clearSearchBtn;
@@ -182,6 +183,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize elements first
     initializePengerjaanElements();
+
+    bulkDeleteAllData();
     
     // Wait a bit to ensure all elements are loaded, then setup handlers
     setTimeout(function() {
@@ -201,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Always ensure backup handler is in place
-        ensureButtonWorks();
+        // ensureButtonWorks();
     }, 500);
 });
 
@@ -269,7 +272,7 @@ function setupPengerjaanHandlers() {
     clearPengerjaanBtn.addEventListener('click', function() {
         console.log('Clear button clicked');
         if (selectedPengerjaan.length > 0) {
-            if (confirm('Apakah Anda yakin ingin menghapus semua item pengerjaan?')) {
+            if (confirm('Apakah kamu yakin ingin menghapus semua item pengerjaan?')) {
                 selectedPengerjaan = [];
                 totalHarga = 0;
                 updatePengerjaanDisplay();
@@ -758,7 +761,7 @@ function displayData() {
 clearBtn.addEventListener('click', function() {
     console.log('Clear button clicked');
     
-    if (confirm('Apakah Anda yakin ingin menghapus semua data form?')) {
+    if (confirm('Apakah kamu yakin ingin menghapus semua data form?')) {
         try {
             form.reset();
             
@@ -788,7 +791,7 @@ clearBtn.addEventListener('click', function() {
 
 // Delete item function
 function deleteItem(index) {
-    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+    if (confirm('Apakah kamu yakin ingin menghapus data ini?')) {
         try {
             const deletedItem = invoiceData[index];
             invoiceData.splice(index, 1);
@@ -1326,43 +1329,69 @@ function focusBillInput(index) {
     }
 }
 
-// Fallback function to ensure button works
-function ensureButtonWorks() {
-    const addBtn = document.getElementById('addPengerjaan');
-    const selectEl = document.getElementById('pengerjaanSelect');
-    const quantityInput = document.getElementById('itemQuantity');
-    
-    if (addBtn && selectEl && quantityInput) {
-        // Remove any existing listeners to avoid duplicates
-        addBtn.onclick = null;
-        
-        // Add direct onclick handler as backup
-        addBtn.onclick = function() {
-            console.log('Backup handler triggered');
-            const selectedOptions = Array.from(selectEl.selectedOptions);
-            const quantity = parseInt(quantityInput.value) || 1;
-            
-            if (selectedOptions.length === 0) {
-                showErrorAlert('Silakan pilih item pengerjaan terlebih dahulu!');
-                return;
+function bulkDeleteAllData() {
+    deleteAllBtn.addEventListener('click', function() {
+        if (confirm('Apakah kamu yakin ingin menghapus semua data?')) {
+            try {
+                invoiceData = [];
+                localStorage.removeItem('invoiceData');
+                showSuccessAlert('Semua data berhasil dihapus!');
+                displayData();
+                // generateCSV();
+            } catch (error) {
+                console.error('Error deleting all data:', error);
+                showErrorMessage('Terjadi kesalahan saat menghapus semua data. Silakan coba lagi.');
             }
-            
-            selectedOptions.forEach(option => {
-                addPengerjaanItem(option.value, quantity);
-            });
-            
-            // Clear selection
-            selectEl.selectedIndex = -1;
-            quantityInput.value = 1;
-            
-            showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
-        };
-        
-        console.log('Backup handler attached to add button');
-    }
+        }
+    });
 }
+
+function showSuccessMessage(message) {
+    const successMessage = document.createElement('div');
+    successMessage.className = 'success-message';
+    successMessage.innerText = message;
+    document.body.appendChild(successMessage);
+    setTimeout(() => {
+        successMessage.remove();
+    }, 3000);
+}
+
+// Fallback function to ensure button works
+// function ensureButtonWorks() {
+//     const addBtn = document.getElementById('addPengerjaan');
+//     const selectEl = document.getElementById('pengerjaanSelect');
+//     const quantityInput = document.getElementById('itemQuantity');
+    
+//     if (addBtn && selectEl && quantityInput) {
+//         // Remove any existing listeners to avoid duplicates
+//         addBtn.onclick = null;
+        
+//         // Add direct onclick handler as backup
+//         addBtn.onclick = function() {
+//             console.log('Backup handler triggered');
+//             const selectedOptions = Array.from(selectEl.selectedOptions);
+//             const quantity = parseInt(quantityInput.value) || 1;
+//             if (selectedPengerjaan.length === 0) {
+//                 showErrorAlert('Silakan pilih item pengerjaan terlebih dahulu!');
+//                 return;
+//             }
+            
+//             selectedOptions.forEach(option => {
+//                 addPengerjaanItem(option.value, quantity);
+//             });
+            
+//             // Clear selection
+//             selectEl.selectedIndex = -1;
+//             quantityInput.value = 1;
+            
+//             showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
+//         };
+        
+//         console.log('Backup handler attached to add button');
+//     }
+// }
 
 // Call the fallback function after DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    ensureButtonWorks();
+    // ensureButtonWorks();
 });
