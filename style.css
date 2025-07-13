@@ -1165,3 +1165,87 @@ ul.a {
 .update-bill-btn:active {
     transform: translateY(0);
 }
+
+.animated-announcement {
+    background: linear-gradient(45deg, #ff6b6b, #ffa500, #ff6b6b, #ffa500);
+    background-size: 400% 400%;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+    border: 2px solid #ff6b6b;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: pulseGlow 2s ease-in-out infinite, gradientMove 3s ease-in-out infinite, slideInBounce 0.8s ease-out;
+    transform-origin: center;
+}
+
+.animated-announcement::before {
+    content: '✨';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.animated-announcement::after {
+    content: '✨';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    animation: sparkle 1.5s ease-in-out infinite 0.5s;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(255, 107, 107, 0.6);
+    }
+}
+
+@keyframes gradientMove {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes slideInBounce {
+    0% {
+        transform: translateY(-30px) scale(0.8);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(5px) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: translateY(-50%) scale(1.2);
+    }
+}
