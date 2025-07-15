@@ -118,14 +118,8 @@ function showErrorMessage(message) {
     console.error('Error:', message);
 }
 
-// DOM elements
-const form = document.getElementById('invoiceForm');
-const dataTable = document.getElementById('dataTable');
-const csvOutput = document.getElementById('csvOutput');
-const exportBtn = document.getElementById('exportBtn');
-const copyBtn = document.getElementById('copyBtn');
-const clearBtn = document.getElementById('clearBtn');
-const deleteAllBtn = document.getElementById('deleteAllBtn');
+// DOM elements - akan diinisialisasi setelah main app di-render
+let form, dataTable, csvOutput, exportBtn, copyBtn, clearBtn, deleteAllBtn;
 
 // Pengerjaan elements
 let pengerjaanSelect, pengerjaanTextarea, addPengerjaanBtn, clearPengerjaanBtn, totalHargaSpan, itemQuantityInput, selectedItemsDiv, searchInput, clearSearchBtn;
@@ -165,6 +159,164 @@ function initializePengerjaanElements() {
             console.log('- addPengerjaanBtn:', !!addPengerjaanBtn);
         }, 200);
     }
+}
+
+// Initialize DOM elements setelah main app di-render
+function initializeDOMElements() {
+    console.log('Initializing DOM elements...');
+    
+    form = document.getElementById('invoiceForm');
+    dataTable = document.getElementById('dataTable');
+    csvOutput = document.getElementById('csvOutput');
+    exportBtn = document.getElementById('exportBtn');
+    copyBtn = document.getElementById('copyBtn');
+    clearBtn = document.getElementById('clearBtn');
+    deleteAllBtn = document.getElementById('deleteAllBtn');
+    
+    console.log('DOM elements found:');
+    console.log('- form:', !!form);
+    console.log('- dataTable:', !!dataTable);
+    console.log('- clearBtn:', !!clearBtn);
+    console.log('- deleteAllBtn:', !!deleteAllBtn);
+    
+    // Setup form event listener
+    if (form) {
+        setupFormEventListener();
+    }
+    
+    // Setup clear button event listener
+    if (clearBtn) {
+        setupClearButtonEventListener();
+    }
+    
+    // Setup delete all button event listener
+    if (deleteAllBtn) {
+        setupDeleteAllButtonEventListener();
+    }
+}
+
+// Setup delete all button event listener
+function setupDeleteAllButtonEventListener() {
+    deleteAllBtn.addEventListener('click', function() {
+        if (confirm('Apakah kamu yakin ingin menghapus semua data?')) {
+            try {
+                invoiceData = [];
+                localStorage.removeItem('invoiceData');
+                showSuccessAlert('Semua data berhasil dihapus!');
+                displayData();
+            } catch (error) {
+                console.error('Error deleting all data:', error);
+                showErrorMessage('Terjadi kesalahan saat menghapus semua data. Silakan coba lagi.');
+            }
+        }
+    });
+}
+
+// Setup form event listener
+function setupFormEventListener() {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        try {
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            // Validate required fields
+            if (!data.nomor || !data.namaClient || !data.jenisKendaraan || !data.namaMontir || !data.pengerjaan) {
+                showErrorMessage('Semua field wajib diisi!');
+                return;
+            }
+            
+            // Add uploaded image data if exists
+            if (uploadedImageData) {
+                data.billScreenshot = uploadedImageData;
+            }
+            
+            // Add timestamp
+            data.timestamp = new Date().toISOString();
+            data.id = Date.now().toString();
+            
+            // Format currency
+            data.modal = parseFloat(data.modal).toFixed(2);
+            data.taxRate = parseFloat(data.taxRate).toFixed(2);
+            data.subtotal = parseFloat(data.subtotal).toFixed(2);
+            data.taxAmount = parseFloat(data.taxAmount).toFixed(2);
+            data.totalInvoice = parseFloat(data.totalInvoice).toFixed(2);
+            
+            // Add to array
+            invoiceData.push(data);
+            
+            // Save to localStorage
+            localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
+            
+            // Update display
+            displayData();
+            
+            // Show success message
+            showSuccessMessage('Data berhasil disimpan!');
+            
+        } catch (error) {
+            console.error('Error saving data:', error);
+            showErrorMessage('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
+        }
+        
+        // Reset form
+        form.reset();
+        
+        // Reset modal to 0
+        document.getElementById('modal').value = '0';
+        
+        // Reset tax rate to 5
+        document.getElementById('taxRate').value = '5';
+        
+        // Reset pengerjaan
+        selectedPengerjaan = [];
+        totalHarga = 0;
+        updatePengerjaanDisplay();
+        
+        // Reset uploaded image
+        if (uploadedImageData) {
+            removeImage();
+        }
+    });
+}
+
+// Setup clear button event listener
+function setupClearButtonEventListener() {
+    clearBtn.addEventListener('click', function() {
+        console.log('Clear button clicked');
+        
+        if (confirm('Apakah kamu yakin ingin menghapus semua data form?')) {
+            try {
+                form.reset();
+                
+                // Reset modal to 0
+                document.getElementById('modal').value = '0';
+                
+                // Reset tax rate to 5
+                document.getElementById('taxRate').value = '5';
+                
+                // Reset pengerjaan
+                selectedPengerjaan = [];
+                totalHarga = 0;
+                updatePengerjaanDisplay();
+                
+                // Reset uploaded image
+                if (uploadedImageData) {
+                    removeImage();
+                }
+                
+                showSuccessMessage('Form berhasil di-reset!');
+            } catch (error) {
+                console.error('Error clearing form:', error);
+                showErrorMessage('Terjadi kesalahan saat mereset form. Silakan coba lagi.');
+            }
+        }
+    });
 }
 
 // Arrays untuk menyimpan pengerjaan dan harga
@@ -523,77 +675,7 @@ function quickSearch(category) {
     }
 }
 
-// Form submission
-form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    try {
-        const formData = new FormData(form);
-        const data = {};
-        
-        for (let [key, value] of formData.entries()) {
-            data[key] = value;
-        }
-        
-        // Validate required fields
-        if (!data.nomor || !data.namaClient || !data.jenisKendaraan || !data.namaMontir || !data.pengerjaan) {
-            showErrorMessage('Semua field wajib diisi!');
-            return;
-        }
-        
-        // Add uploaded image data if exists
-        if (uploadedImageData) {
-            data.billScreenshot = uploadedImageData;
-        }
-        
-        // Add timestamp
-        data.timestamp = new Date().toISOString();
-        data.id = Date.now().toString();
-        
-        // Format currency
-        data.modal = parseFloat(data.modal).toFixed(2);
-        data.taxRate = parseFloat(data.taxRate).toFixed(2);
-        data.subtotal = parseFloat(data.subtotal).toFixed(2);
-        data.taxAmount = parseFloat(data.taxAmount).toFixed(2);
-        data.totalInvoice = parseFloat(data.totalInvoice).toFixed(2);
-        
-        // Add to array
-        invoiceData.push(data);
-        
-        // Save to localStorage
-        localStorage.setItem('invoiceData', JSON.stringify(invoiceData));
-        
-        // Update display
-        displayData();
-        // generateCSV();
-        
-        // Show success message
-        showSuccessMessage('Data berhasil disimpan!');
-        
-    } catch (error) {
-        console.error('Error saving data:', error);
-        showErrorMessage('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
-    }
-    
-    // Reset form
-    form.reset();
-    
-    // Reset modal to 0
-    document.getElementById('modal').value = '0';
-    
-    // Reset tax rate to 5
-    document.getElementById('taxRate').value = '5';
-    
-    // Reset pengerjaan
-    selectedPengerjaan = [];
-    totalHarga = 0;
-    updatePengerjaanDisplay();
-    
-    // Reset uploaded image
-    if (uploadedImageData) {
-        removeImage();
-    }
-});
+// Form submission will be handled in setupFormEventListener()
 
 // Display data function
 function displayData() {
@@ -722,37 +804,7 @@ function displayData() {
 //     }
 // });
 
-// Clear form
-clearBtn.addEventListener('click', function() {
-    console.log('Clear button clicked');
-    
-    if (confirm('Apakah kamu yakin ingin menghapus semua data form?')) {
-        try {
-            form.reset();
-            
-            // Reset modal to 0
-            document.getElementById('modal').value = '0';
-            
-            // Reset tax rate to 5
-            document.getElementById('taxRate').value = '5';
-            
-            // Reset pengerjaan
-            selectedPengerjaan = [];
-            totalHarga = 0;
-            updatePengerjaanDisplay();
-            
-            // Reset uploaded image
-            if (uploadedImageData) {
-                removeImage();
-            }
-            
-            showSuccessMessage('Form berhasil di-reset!');
-        } catch (error) {
-            console.error('Error clearing form:', error);
-            showErrorMessage('Terjadi kesalahan saat mereset form. Silakan coba lagi.');
-        }
-    }
-});
+// Clear form - will be handled in setupClearButtonEventListener()
 
 // Delete item function
 function deleteItem(index) {
@@ -1294,23 +1346,6 @@ function focusBillInput(index) {
     }
 }
 
-function bulkDeleteAllData() {
-    deleteAllBtn.addEventListener('click', function() {
-        if (confirm('Apakah kamu yakin ingin menghapus semua data?')) {
-            try {
-                invoiceData = [];
-                localStorage.removeItem('invoiceData');
-                showSuccessAlert('Semua data berhasil dihapus!');
-                displayData();
-                // generateCSV();
-            } catch (error) {
-                console.error('Error deleting all data:', error);
-                showErrorMessage('Terjadi kesalahan saat menghapus semua data. Silakan coba lagi.');
-            }
-        }
-    });
-}
-
 // PIN/Passkey System
 const DEFAULT_PIN = '123456';
 let currentPIN = localStorage.getItem('userPIN') || DEFAULT_PIN;
@@ -1318,41 +1353,84 @@ let isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
 
 // Check authentication on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing authentication...');
+    console.log('Is authenticated:', isAuthenticated);
+    console.log('Current PIN:', currentPIN);
+    
+    // Initialize login functionality first with delay to ensure elements exist
+    setTimeout(() => {
+        console.log('Attempting to initialize login...');
+        initializeLogin();
+    }, 200);
+    
     if (isAuthenticated) {
+        console.log('User is authenticated, showing main app...');
         showMainApp();
+        // Initialize main app after content is rendered
+        setTimeout(() => {
+            initializeMainApp();
+        }, 300);
     } else {
+        console.log('User not authenticated, showing login overlay...');
         showLoginOverlay();
-    }
-    
-    // Initialize login functionality
-    initializeLogin();
-    
-    // Initialize main app if authenticated
-    if (isAuthenticated) {
-        initializeMainApp();
     }
 });
 
 function initializeLogin() {
+    console.log('=== INITIALIZING LOGIN ===');
+    
     const pinInput = document.getElementById('pinInput');
     const loginBtn = document.getElementById('loginBtn');
     const togglePinBtn = document.getElementById('togglePinVisibility');
     const loginError = document.getElementById('loginError');
 
+    // Check if elements exist
+    console.log('Login elements check:');
+    console.log('- pinInput:', pinInput ? 'FOUND' : 'NOT FOUND');
+    console.log('- loginBtn:', loginBtn ? 'FOUND' : 'NOT FOUND');
+    console.log('- togglePinBtn:', togglePinBtn ? 'FOUND' : 'NOT FOUND');
+    console.log('- loginError:', loginError ? 'FOUND' : 'NOT FOUND');
+
+    if (!pinInput || !loginBtn || !togglePinBtn || !loginError) {
+        console.error('❌ Login elements not found!');
+        // Retry after a delay
+        setTimeout(() => {
+            console.log('🔄 Retrying login initialization...');
+            initializeLogin();
+        }, 500);
+        return;
+    }
+
+    console.log('✅ All login elements found, setting up handlers...');
+
+    // Remove any existing listeners first
+    const newLoginBtn = loginBtn.cloneNode(true);
+    loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+    
+    const newToggleBtn = togglePinBtn.cloneNode(true);
+    togglePinBtn.parentNode.replaceChild(newToggleBtn, togglePinBtn);
+
+    // Get references to new elements
+    const freshLoginBtn = document.getElementById('loginBtn');
+    const freshToggleBtn = document.getElementById('togglePinVisibility');
+
     // Toggle PIN visibility
-    togglePinBtn.addEventListener('click', function() {
+    freshToggleBtn.onclick = function() {
+        console.log('👁️ Toggle PIN visibility clicked');
         if (pinInput.type === 'password') {
             pinInput.type = 'text';
-            togglePinBtn.textContent = '🙈';
+            freshToggleBtn.textContent = '🙈';
         } else {
             pinInput.type = 'password';
-            togglePinBtn.textContent = '👁️';
+            freshToggleBtn.textContent = '👁️';
         }
-    });
+    };
 
     // Handle Enter key press
-    pinInput.addEventListener('keypress', function(e) {
+    pinInput.onkeypress = function(e) {
         if (e.key === 'Enter') {
+            e.preventDefault();
+            console.log('⌨️ Enter key pressed, attempting login...');
             attemptLogin();
         }
         
@@ -1360,36 +1438,83 @@ function initializeLogin() {
         if (loginError.style.display !== 'none') {
             loginError.style.display = 'none';
         }
-    });
+    };
 
     // Login button click
-    loginBtn.addEventListener('click', attemptLogin);
+    freshLoginBtn.onclick = function() {
+        console.log('🔘 Login button clicked, attempting login...');
+        attemptLogin();
+    };
+
+    // Also add addEventListener as backup
+    freshLoginBtn.addEventListener('click', function() {
+        console.log('🔘 Login button addEventListener triggered');
+        attemptLogin();
+    });
+
+    freshToggleBtn.addEventListener('click', function() {
+        console.log('👁️ Toggle addEventListener triggered');
+        if (pinInput.type === 'password') {
+            pinInput.type = 'text';
+            freshToggleBtn.textContent = '🙈';
+        } else {
+            pinInput.type = 'password';
+            freshToggleBtn.textContent = '👁️';
+        }
+    });
 
     // Focus on PIN input
-    pinInput.focus();
+    setTimeout(() => {
+        pinInput.focus();
+        console.log('🎯 PIN input focused');
+    }, 100);
+    
+    console.log('✅ Login initialization complete!');
 }
 
 function attemptLogin() {
+    console.log('attemptLogin function called');
+    
     const pinInput = document.getElementById('pinInput');
     const loginError = document.getElementById('loginError');
+    
+    if (!pinInput || !loginError) {
+        console.error('Login elements not found in attemptLogin');
+        return;
+    }
+    
     const enteredPIN = pinInput.value.trim();
+    console.log('Entered PIN length:', enteredPIN.length);
+    console.log('Current PIN:', currentPIN);
+    console.log('PIN match:', enteredPIN === currentPIN);
 
     if (enteredPIN === currentPIN) {
+        console.log('Login successful!');
+        
         // Successful login
         sessionStorage.setItem('isAuthenticated', 'true');
         isAuthenticated = true;
         
         // Hide login overlay with animation
         const loginOverlay = document.getElementById('loginOverlay');
-        loginOverlay.style.animation = 'slideOutUp 0.5s ease-out';
+        if (loginOverlay) {
+            loginOverlay.style.animation = 'slideOutUp 0.5s ease-out';
+        }
         
         setTimeout(() => {
-            loginOverlay.style.display = 'none';
+            if (loginOverlay) {
+                loginOverlay.style.display = 'none';
+            }
             showMainApp();
-            initializeMainApp();
-            showSuccessAlert('Login berhasil! Selamat datang di Motion Garage System.');
+            // Initialize main app after content is rendered
+            setTimeout(() => {
+                initializeMainApp();
+                showSuccessAlert('Login berhasil! Selamat datang di Motion Garage System.');
+            }, 100);
         }, 500);
     } else {
+        console.log('Login failed - incorrect PIN');
+        
         // Failed login
         loginError.style.display = 'block';
         pinInput.value = '';
@@ -1397,10 +1522,12 @@ function attemptLogin() {
         
         // Add shake animation to container
         const loginContainer = document.querySelector('.login-container');
-        loginContainer.style.animation = 'shake 0.5s ease-in-out';
-        setTimeout(() => {
-            loginContainer.style.animation = '';
-        }, 500);
+        if (loginContainer) {
+            loginContainer.style.animation = 'shake 0.5s ease-in-out';
+            setTimeout(() => {
+                loginContainer.style.animation = '';
+            }, 500);
+        }
     }
 }
 
@@ -1409,7 +1536,7 @@ function showLoginOverlay() {
     const mainApp = document.getElementById('mainApp');
     
     loginOverlay.style.display = 'flex';
-    mainApp.style.display = 'none';
+    mainApp.innerHTML = ''; // Clear main app content
 }
 
 function showMainApp() {
@@ -1417,12 +1544,20 @@ function showMainApp() {
     const mainApp = document.getElementById('mainApp');
     
     loginOverlay.style.display = 'none';
+    
+    // Render main app content dinamis hanya setelah login berhasil
+    mainApp.innerHTML = getMainAppHTML();
     mainApp.style.display = 'block';
 }
 
 function logout() {
     sessionStorage.removeItem('isAuthenticated');
     isAuthenticated = false;
+    
+    // Clear main app content completely
+    const mainApp = document.getElementById('mainApp');
+    mainApp.innerHTML = '';
+    
     showLoginOverlay();
     
     // Clear PIN input
@@ -1497,6 +1632,9 @@ function initializeMainApp() {
     // Continue with existing initialization
     console.log('Initializing main app...');
     
+    // Initialize DOM elements first
+    initializeDOMElements();
+    
     // Initialize alert close buttons
     initializeAlertCloseButtons();
     
@@ -1505,8 +1643,6 @@ function initializeMainApp() {
     
     // Initialize elements first
     initializePengerjaanElements();
-
-    bulkDeleteAllData();
     
     // Wait a bit to ensure all elements are loaded, then setup handlers
     setTimeout(function() {
@@ -1514,7 +1650,6 @@ function initializeMainApp() {
         setupPengerjaanHandlers();
         
         displayData();
-        // generateCSV();
     }, 200);
     
     // Additional retry mechanism for critical elements
@@ -1524,8 +1659,242 @@ function initializeMainApp() {
             initializePengerjaanElements();
             setupPengerjaanHandlers();
         }
-        
-        // Always ensure backup handler is in place
-        // ensureButtonWorks();
     }, 500);
 }
+
+// Template untuk main app content - hanya di-render setelah login berhasil
+function getMainAppHTML() {
+    return `
+        <div class="container">
+            <header>
+                <h1>📋 Motion Garage Invoice Data Entry System</h1>
+                <p>Input data invoice dan export ke format CSV untuk Discord</p>
+            </header>
+
+            <div style="padding: 30px 60px 0px 60px">
+                <div class="animated-announcement">
+                    Harga Part Baru!!!!
+                </div>
+            </div>
+
+            <div class="form-container">
+                <form id="invoiceForm">
+                    <div class="section">
+                        <h2>📝 Data Invoice</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nomor">Nomor:</label>
+                                <input type="number" id="nomor" name="nomor" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="namaClient">Nama Client:</label>
+                                <input type="text" id="namaClient" name="namaClient" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="jenisKendaraan">Jenis Kendaraan:</label>
+                                <input type="text" id="jenisKendaraan" name="jenisKendaraan" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="namaMontir">Nama Montir:</label>
+                                <input type="text" id="namaMontir" name="namaMontir" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pengerjaan">Pengerjaan:</label>
+                                <div class="pengerjaan-container">
+                                    <div class="search-container">
+                                        <input type="text" id="searchPengerjaan" placeholder="🔍 Cari item pengerjaan..." class="search-input">
+                                        <button type="button" id="clearSearch" class="clear-search-btn">✖️</button>
+                                    </div>
+                                    <select id="pengerjaanSelect" class="pengerjaan-select" multiple size="8">
+                                        <optgroup label="SERVICES">
+                                            <option value="ENGINE OIL|50" data-search="engine oil services">ENGINE OIL - $50</option>
+                                            <option value="AIR FILTER|100" data-search="air filter services">AIR FILTER - $100</option>
+                                            <option value="SPARK PLUG|50" data-search="spark plug services">SPARK PLUG - $50</option>
+                                            <option value="CLEANING KIT|50" data-search="cleaning kit services">CLEANING KIT - $50</option>
+                                            <option value="DUCT TAPE|50" data-search="duct tape services">DUCT TAPE - $50</option>
+                                        </optgroup>
+                                        <optgroup label="BRAKE TYPE">
+                                            <option value="BRAKEPAD|350" data-search="brakepad brake type">BRAKEPAD - $350</option>
+                                            <option value="SUSPENSION PART|400" data-search="suspension part brake type">SUSPENSION PART - $400</option>
+                                            <option value="TYRE REPLACEMENT|350" data-search="tyre replacement brake type">TYRE REPLACEMENT - $350</option>
+                                            <option value="SLICK TYRES|600" data-search="slick tyres brake type">SLICK TYRES - $600</option>
+                                            <option value="SEMI SLICK TYRES|550" data-search="semi slick tyres brake type">SEMI SLICK TYRES - $550</option>
+                                            <option value="OFFROAD TYRES|500" data-search="offroad tyres brake type">OFFROAD TYRES - $500</option>
+                                            <option value="BULLETPROOF TYRES|6000" data-search="bulletproof tyres brake type">BULLETPROOF TYRES - $6,000</option>
+                                            <option value="VEHICLE WHEELS|900" data-search="vehicle wheels brake type">VEHICLE WHEELS - $900</option>
+                                            <option value="TYRE SMOKE KIT|400" data-search="tyre smoke kit brake type">TYRE SMOKE KIT - $400</option>
+                                        </optgroup>
+                                        <optgroup label="ENGINE DRIVETRAIN">
+                                            <option value="CLUTCH REPLACEMENT|400" data-search="clutch replacement brake type">CLUTCH REPLACEMENT - $400</option>
+                                            <option value="I4 ENGINE|6600" data-search="i4 engine drivetrain">I4 ENGINE - $6,600</option>
+                                            <option value="V6 ENGINE|6600" data-search="v6 engine drivetrain">V6 ENGINE - $6,600</option>
+                                            <option value="V8 ENGINE|12000" data-search="v8 engine drivetrain">V8 ENGINE - $12,000</option>
+                                            <option value="V12 ENGINE|24000" data-search="v12 engine drivetrain">V12 ENGINE - $24,000</option>
+                                            <option value="TURBOCHARGER|7500" data-search="turbocharger engine drivetrain">TURBOCHARGER - $7,500</option>
+                                            <option value="MANUAL GEARBOX|5100" data-search="manual gearbox engine drivetrain">MANUAL GEARBOX - $5,100</option>
+                                            <option value="AWD|5400" data-search="awd engine drivetrain">AWD - $5,400</option>
+                                            <option value="RWD|4500" data-search="rwd engine drivetrain">RWD - $4,500</option>
+                                            <option value="FWD|3600" data-search="fwd engine drivetrain">FWD - $3,600</option>
+                                        </optgroup>
+                                        <optgroup label="EV">
+                                            <option value="EV MOTOR|9000" data-search="ev motor electric">EV MOTOR - $9,000</option>
+                                            <option value="EV BATTERY|7500" data-search="ev battery electric">EV BATTERY - $7,500</option>
+                                            <option value="EV COOLANT|200" data-search="ev coolant electric">EV COOLANT - $200</option>
+                                        </optgroup>
+                                        <optgroup label="PERFORMANCE">
+                                            <option value="PERFORMANCE PART|1500" data-search="performance part">PERFORMANCE PART - $1,500</option>
+                                            <option value="DRIFT TUNING KIT|3000" data-search="drift tuning kit performance">DRIFT TUNING KIT - $3,000</option>
+                                            <option value="CERAMIC BRAKES|4500" data-search="ceramic brakes performance">CERAMIC BRAKES - $4,500</option>
+                                            <option value="NITROUS BOTTLE|300" data-search="nitrous bottle performance">NITROUS BOTTLE - $300</option>
+                                            <option value="EMPTY NITROUS BOTTLE|100" data-search="empty nitrous bottle performance">EMPTY NITROUS BOTTLE - $100</option>
+                                            <option value="NITROUS INSTALL KIT|500" data-search="nitrous install kit performance">NITROUS INSTALL KIT - $500</option>
+                                        </optgroup>
+                                        <optgroup label="TOOL">
+                                            <option value="MECH TABLET|300" data-search="mech tablet tool">MECH TABLET - $300</option>
+                                            <option value="LIGHTING CONTROLLER|500" data-search="lighting controller tool">LIGHTING CONTROLLER - $500</option>
+                                        </optgroup>
+                                        <optgroup label="VISUAL MODIF">
+                                            <option value="STANCING KIT|2500" data-search="stancing kit tool">STANCING KIT - $2,500</option>
+                                            <option value="COSMETIC PART|300" data-search="cosmetic part visual modif">COSMETIC PART - $300</option>
+                                            <option value="RESPRAY KIT|250" data-search="respray kit visual modif">RESPRAY KIT - $250</option>
+                                            <option value="EXTRAS KIT|800" data-search="extras kit visual modif">EXTRAS KIT - $800</option>
+                                        </optgroup>
+                                    </select>
+                                    <div class="pengerjaan-controls">
+                                        <button type="button" id="addPengerjaan" class="add-btn">➕ Tambah Selected</button>
+                                        <div class="quantity-control">
+                                            <label for="itemQuantity">Qty:</label>
+                                            <input type="number" id="itemQuantity" value="1" min="1" max="99">
+                                        </div>
+                                    </div>
+                                </div>
+                                <textarea id="pengerjaan" name="pengerjaan" rows="4" placeholder="Daftar pengerjaan akan muncul di sini..." required readonly></textarea>
+                                <div class="pengerjaan-actions">
+                                    <button type="button" id="clearPengerjaan" class="clear-btn">🗑️ Clear All</button>
+                                    <span id="totalHarga" class="total-harga">Total: $0</span>
+                                </div>
+                                <div id="selectedItems" class="selected-items"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal">Modal:</label>
+                                <input type="number" id="modal" name="modal" step="0.01" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="billScreenshot">📸 Upload Bill Screenshot:</label>
+                                <div class="file-upload-container">
+                                    <input type="file" id="billScreenshot" name="billScreenshot" accept="image/*" class="file-input">
+                                    <div class="file-upload-display">
+                                        <div id="imagePreview" class="image-preview" style="display: none;">
+                                            <img id="previewImg" src="" alt="Preview">
+                                            <button type="button" id="removeImage" class="remove-image-btn">❌ Remove</button>
+                                        </div>
+                                        <div id="uploadPrompt" class="upload-prompt">
+                                            <span>📁 Pilih file gambar atau drag & drop di sini</span>
+                                            <small>Format: JPG, PNG, GIF (Max: 5MB)</small>
+                                            <small style="display: block; margin-top: 5px; color: #667eea;">
+                                                ⌨️ Atau tekan <strong>Ctrl+V</strong> untuk paste screenshot
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="taxRate">Tax Rate (%):</label>
+                                <input type="number" id="taxRate" name="taxRate" step="0.01" value="5" min="0" max="100" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subtotal">Subtotal:</label>
+                                <input type="number" id="subtotal" name="subtotal" step="0.01" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="taxAmount">Tax Amount:</label>
+                                <input type="number" id="taxAmount" name="taxAmount" step="0.01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="totalInvoice">Total Invoice:</label>
+                                <input type="number" id="totalInvoice" name="totalInvoice" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billNumber">💳 Bill Number (Optional):</label>
+                                <input type="text" id="billNumber" name="billNumber" placeholder="Masukkan nomor bill dari game...">
+                                <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                                    Bill number bisa diedit setelah data disimpan sebelum di-copy
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan Data</button>
+                        <button type="button" id="clearBtn" class="btn btn-danger">🗑️ Clear Form</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="data-container">
+                <div style="display: flex; justify-content: space-between; align-items: center">
+                    <h2>📊 Data Tersimpan</h2>
+                    <button id="deleteAllBtn" class="btn btn-danger" style="margin-left: auto; margin-bottom: 15px;">🗑️ Hapus Semua Data</button>
+                </div>
+                <div id="dataTable"></div>
+            </div>
+
+            <div class="export-container">
+                <h2>📋 Export Options</h2>
+                <div class="export-options">
+                    <div class="export-section">
+                        <h3>📝 Export Data Individual</h3>
+                        <p>Untuk export data individual, gunakan tombol <strong>"📋 Copy ke Discord"</strong> pada setiap data di atas.</p>
+                        <p>Format yang akan di-copy:</p>
+                        <pre class="format-example">\`\`\`css
+Nomor           : 3
+Nama Client     : William Lottin
+Jenis Kendaraan : mobil
+
+Nama Montir     : Gobi Alexander
+Pengerjaan      : VEHICLE WHEELS 1, Extras
+Modal           : 0
+Bill Number     : BILL123456
+
+Subtotal        : $540.00
+Tax Rate        : 5.00%
+Tax Amount      : $27.00
+Total Invoice   : $567.00\`\`\`</pre>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <p>© 2025 Motion Garage | Diaz Ardian. All rights reserved.</p>
+                <p>Created by <a href="https://github.com/diazardian" target="_blank">Gobi Alexander | Diaz Ardian</a></p>
+            </div>
+        </div>
+
+        <!-- for alert -->
+        <div>
+            <div id="alert" class="alert">
+                <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+                <strong>Info!</strong> Data berhasil disimpan.
+            </div>
+            <div id="alertError" class="alert error">
+                <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+                <strong>Error!</strong> Terjadi kesalahan saat menyimpan data.
+            </div>
+            <div id="alertExport" class="alert export">
+                <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+                <strong>Exported!</strong> Data berhasil diexport ke CSV.
+            </div>
+        </div>
+    `;
+}
+
+// PIN/Passkey System
