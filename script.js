@@ -172,41 +172,6 @@ let selectedPengerjaan = [];
 let totalHarga = 0;
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded');
-    
-    // Initialize alert close buttons
-    initializeAlertCloseButtons();
-    
-    // Initialize image upload
-    initializeImageUpload();
-    
-    // Initialize elements first
-    initializePengerjaanElements();
-
-    bulkDeleteAllData();
-    
-    // Wait a bit to ensure all elements are loaded, then setup handlers
-    setTimeout(function() {
-        console.log('Setting up pengerjaan handlers...');
-        setupPengerjaanHandlers();
-        
-        displayData();
-        // generateCSV();
-    }, 200);
-    
-    // Additional retry mechanism for critical elements
-    setTimeout(function() {
-        if (!addPengerjaanBtn || !pengerjaanSelect) {
-            console.log('Retrying element initialization...');
-            initializePengerjaanElements();
-            setupPengerjaanHandlers();
-        }
-        
-        // Always ensure backup handler is in place
-        // ensureButtonWorks();
-    }, 500);
-});
 
 // Initialize alert close buttons
 function initializeAlertCloseButtons() {
@@ -1346,52 +1311,221 @@ function bulkDeleteAllData() {
     });
 }
 
-function showSuccessMessage(message) {
-    const successMessage = document.createElement('div');
-    successMessage.className = 'success-message';
-    successMessage.innerText = message;
-    document.body.appendChild(successMessage);
-    setTimeout(() => {
-        successMessage.remove();
-    }, 3000);
+// PIN/Passkey System
+const DEFAULT_PIN = '123456';
+let currentPIN = localStorage.getItem('userPIN') || DEFAULT_PIN;
+let isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+
+// Check authentication on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (isAuthenticated) {
+        showMainApp();
+    } else {
+        showLoginOverlay();
+    }
+    
+    // Initialize login functionality
+    initializeLogin();
+    
+    // Initialize main app if authenticated
+    if (isAuthenticated) {
+        initializeMainApp();
+    }
+});
+
+function initializeLogin() {
+    const pinInput = document.getElementById('pinInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const togglePinBtn = document.getElementById('togglePinVisibility');
+    const loginError = document.getElementById('loginError');
+
+    // Toggle PIN visibility
+    togglePinBtn.addEventListener('click', function() {
+        if (pinInput.type === 'password') {
+            pinInput.type = 'text';
+            togglePinBtn.textContent = '🙈';
+        } else {
+            pinInput.type = 'password';
+            togglePinBtn.textContent = '👁️';
+        }
+    });
+
+    // Handle Enter key press
+    pinInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            attemptLogin();
+        }
+        
+        // Hide error message when typing
+        if (loginError.style.display !== 'none') {
+            loginError.style.display = 'none';
+        }
+    });
+
+    // Login button click
+    loginBtn.addEventListener('click', attemptLogin);
+
+    // Focus on PIN input
+    pinInput.focus();
 }
 
-// Fallback function to ensure button works
-// function ensureButtonWorks() {
-//     const addBtn = document.getElementById('addPengerjaan');
-//     const selectEl = document.getElementById('pengerjaanSelect');
-//     const quantityInput = document.getElementById('itemQuantity');
-    
-//     if (addBtn && selectEl && quantityInput) {
-//         // Remove any existing listeners to avoid duplicates
-//         addBtn.onclick = null;
-        
-//         // Add direct onclick handler as backup
-//         addBtn.onclick = function() {
-//             console.log('Backup handler triggered');
-//             const selectedOptions = Array.from(selectEl.selectedOptions);
-//             const quantity = parseInt(quantityInput.value) || 1;
-//             if (selectedPengerjaan.length === 0) {
-//                 showErrorAlert('Silakan pilih item pengerjaan terlebih dahulu!');
-//                 return;
-//             }
-            
-//             selectedOptions.forEach(option => {
-//                 addPengerjaanItem(option.value, quantity);
-//             });
-            
-//             // Clear selection
-//             selectEl.selectedIndex = -1;
-//             quantityInput.value = 1;
-            
-//             showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
-//         };
-        
-//         console.log('Backup handler attached to add button');
-//     }
-// }
+function attemptLogin() {
+    const pinInput = document.getElementById('pinInput');
+    const loginError = document.getElementById('loginError');
+    const enteredPIN = pinInput.value.trim();
 
-// Call the fallback function after DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    // ensureButtonWorks();
-});
+    if (enteredPIN === currentPIN) {
+        // Successful login
+        sessionStorage.setItem('isAuthenticated', 'true');
+        isAuthenticated = true;
+        
+        // Hide login overlay with animation
+        const loginOverlay = document.getElementById('loginOverlay');
+        loginOverlay.style.animation = 'slideOutUp 0.5s ease-out';
+        
+        setTimeout(() => {
+            loginOverlay.style.display = 'none';
+            showMainApp();
+            initializeMainApp();
+            showSuccessAlert('Login berhasil! Selamat datang di Motion Garage System.');
+        }, 500);
+    } else {
+        // Failed login
+        loginError.style.display = 'block';
+        pinInput.value = '';
+        pinInput.focus();
+        
+        // Add shake animation to container
+        const loginContainer = document.querySelector('.login-container');
+        loginContainer.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => {
+            loginContainer.style.animation = '';
+        }, 500);
+    }
+}
+
+function showLoginOverlay() {
+    const loginOverlay = document.getElementById('loginOverlay');
+    const mainApp = document.getElementById('mainApp');
+    
+    loginOverlay.style.display = 'flex';
+    mainApp.style.display = 'none';
+}
+
+function showMainApp() {
+    const loginOverlay = document.getElementById('loginOverlay');
+    const mainApp = document.getElementById('mainApp');
+    
+    loginOverlay.style.display = 'none';
+    mainApp.style.display = 'block';
+}
+
+function logout() {
+    sessionStorage.removeItem('isAuthenticated');
+    isAuthenticated = false;
+    showLoginOverlay();
+    
+    // Clear PIN input
+    const pinInput = document.getElementById('pinInput');
+    if (pinInput) {
+        pinInput.value = '';
+        pinInput.focus();
+    }
+    
+    showSuccessAlert('Berhasil logout. Silakan login kembali untuk mengakses sistem.');
+}
+
+function changePIN() {
+    if (!isAuthenticated) {
+        showErrorAlert('Anda harus login terlebih dahulu.');
+        return;
+    }
+
+    const currentPinPrompt = prompt('Masukkan PIN saat ini:');
+    if (currentPinPrompt !== currentPIN) {
+        showErrorAlert('PIN saat ini salah.');
+        return;
+    }
+
+    const newPIN = prompt('Masukkan PIN baru (6 digit):');
+    if (!newPIN || newPIN.length !== 6 || !/^\d{6}$/.test(newPIN)) {
+        showErrorAlert('PIN harus terdiri dari 6 digit angka.');
+        return;
+    }
+
+    const confirmPIN = prompt('Konfirmasi PIN baru:');
+    if (newPIN !== confirmPIN) {
+        showErrorAlert('Konfirmasi PIN tidak cocok.');
+        return;
+    }
+
+    // Save new PIN
+    localStorage.setItem('userPIN', newPIN);
+    currentPIN = newPIN;
+    showSuccessAlert('PIN berhasil diubah!');
+}
+
+// Add logout and change PIN buttons to the app
+function addSecurityControls() {
+    // Add security controls to header
+    const header = document.querySelector('header');
+    if (header && !header.querySelector('.security-controls')) {
+        const securityControls = document.createElement('div');
+        securityControls.className = 'security-controls';
+        securityControls.innerHTML = `
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" id="changePinBtn" class="btn btn-secondary" style="display: none; font-size: 0.9rem; padding: 8px 15px;">
+                    🔑 Ubah PIN
+                </button>
+                <button type="button" id="logoutBtn" class="btn btn-danger" style="font-size: 0.9rem; padding: 8px 15px;">
+                    🚪 Logout
+                </button>
+            </div>
+        `;
+        header.appendChild(securityControls);
+
+        // Add event listeners
+        // document.getElementById('changePinBtn').addEventListener('click', changePIN);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    }
+}
+
+function initializeMainApp() {
+    // Add security controls
+    addSecurityControls();
+    
+    // Continue with existing initialization
+    console.log('Initializing main app...');
+    
+    // Initialize alert close buttons
+    initializeAlertCloseButtons();
+    
+    // Initialize image upload
+    initializeImageUpload();
+    
+    // Initialize elements first
+    initializePengerjaanElements();
+
+    bulkDeleteAllData();
+    
+    // Wait a bit to ensure all elements are loaded, then setup handlers
+    setTimeout(function() {
+        console.log('Setting up pengerjaan handlers...');
+        setupPengerjaanHandlers();
+        
+        displayData();
+        // generateCSV();
+    }, 200);
+    
+    // Additional retry mechanism for critical elements
+    setTimeout(function() {
+        if (!addPengerjaanBtn || !pengerjaanSelect) {
+            console.log('Retrying element initialization...');
+            initializePengerjaanElements();
+            setupPengerjaanHandlers();
+        }
+        
+        // Always ensure backup handler is in place
+        // ensureButtonWorks();
+    }, 500);
+}
