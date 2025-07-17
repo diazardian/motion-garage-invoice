@@ -1347,7 +1347,7 @@ function focusBillInput(index) {
 }
 
 // PIN/Passkey System
-const DEFAULT_PIN = '123456';
+const DEFAULT_PIN = '132435';
 let currentPIN = localStorage.getItem('userPIN') || DEFAULT_PIN;
 let isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
 
