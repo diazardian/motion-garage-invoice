@@ -303,10 +303,144 @@ header p {
 .pengerjaan-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
     margin-bottom: 10px;
 }
 
+/* Manual pengerjaan input styling */
+.manual-pengerjaan-container {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+}
+
+.quick-presets {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.quick-presets label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.preset-btn {
+    padding: 6px 12px;
+    border: 1px solid #6c757d;
+    border-radius: 6px;
+    background: white;
+    color: #495057;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-1px);
+}
+
+.input-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.part-input, .price-input, .quantity-input {
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.part-input:focus, .price-input:focus, .quantity-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.price-input[readonly] {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.quantity-input {
+    width: 80px;
+    text-align: center;
+}
+
+.pengerjaan-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #e9ecef;
+}
+
+.add-btn, .reset-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.reset-btn {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+    color: #2d3436;
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 234, 167, 0.4);
+}
+
+/* Legacy styling for compatibility */
 .search-container {
     position: relative;
     display: flex;
@@ -1380,6 +1514,56 @@ ul.a {
     color: #1565c0;
     margin-bottom: 5px;
     font-size: 0.9rem;
+}
+
+/* Responsive design for manual pengerjaan */
+@media (max-width: 768px) {
+    .input-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pengerjaan-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .add-btn, .reset-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .manual-pengerjaan-container {
+        padding: 15px;
+    }
+    
+    .preset-buttons {
+        flex-direction: column;
+    }
+    
+    .preset-btn {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .selected-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .selected-item-info {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .selected-item-price {
+        font-size: 0.9rem;
+    }
 }
 
 .login-hint small:last-child {

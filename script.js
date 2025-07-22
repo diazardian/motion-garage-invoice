@@ -122,40 +122,48 @@ function showErrorMessage(message) {
 let form, dataTable, csvOutput, exportBtn, copyBtn, clearBtn, deleteAllBtn;
 
 // Pengerjaan elements
-let pengerjaanSelect, pengerjaanTextarea, addPengerjaanBtn, clearPengerjaanBtn, totalHargaSpan, itemQuantityInput, selectedItemsDiv, searchInput, clearSearchBtn;
+// DOM elements for pengerjaan
+let partNameInput, partPriceInput, servicePriceInput, pengerjaanTextarea, addPengerjaanBtn, clearPengerjaanBtn, totalHargaSpan, itemQuantityInput, selectedItemsDiv, resetManualFormBtn;
 
 // Initialize pengerjaan elements
 function initializePengerjaanElements() {
     console.log('Initializing pengerjaan elements...');
     
-    pengerjaanSelect = document.getElementById('pengerjaanSelect');
+    partNameInput = document.getElementById('partName');
+    partPriceInput = document.getElementById('partPrice');
+    servicePriceInput = document.getElementById('servicePrice');
     pengerjaanTextarea = document.getElementById('pengerjaan');
     addPengerjaanBtn = document.getElementById('addPengerjaan');
     clearPengerjaanBtn = document.getElementById('clearPengerjaan');
     totalHargaSpan = document.getElementById('totalHarga');
     itemQuantityInput = document.getElementById('itemQuantity');
     selectedItemsDiv = document.getElementById('selectedItems');
-    searchInput = document.getElementById('searchPengerjaan');
-    clearSearchBtn = document.getElementById('clearSearch');
+    resetManualFormBtn = document.getElementById('resetManualForm');
     
     // Log which elements were found
     console.log('Elements found:');
-    console.log('- pengerjaanSelect:', !!pengerjaanSelect);
+    console.log('- partNameInput:', !!partNameInput);
+    console.log('- partPriceInput:', !!partPriceInput);
+    console.log('- servicePriceInput:', !!servicePriceInput);
     console.log('- addPengerjaanBtn:', !!addPengerjaanBtn);
     console.log('- clearPengerjaanBtn:', !!clearPengerjaanBtn);
     console.log('- itemQuantityInput:', !!itemQuantityInput);
+    console.log('- resetManualFormBtn:', !!resetManualFormBtn);
     
     // If key elements are missing, try to find them again after a delay
-    if (!pengerjaanSelect || !addPengerjaanBtn) {
+    if (!partNameInput || !addPengerjaanBtn) {
         console.warn('Key elements not found, will retry...');
         setTimeout(() => {
-            pengerjaanSelect = pengerjaanSelect || document.getElementById('pengerjaanSelect');
+            partNameInput = partNameInput || document.getElementById('partName');
+            partPriceInput = partPriceInput || document.getElementById('partPrice');
+            servicePriceInput = servicePriceInput || document.getElementById('servicePrice');
             addPengerjaanBtn = addPengerjaanBtn || document.getElementById('addPengerjaan');
             clearPengerjaanBtn = clearPengerjaanBtn || document.getElementById('clearPengerjaan');
             itemQuantityInput = itemQuantityInput || document.getElementById('itemQuantity');
+            resetManualFormBtn = resetManualFormBtn || document.getElementById('resetManualForm');
             
             console.log('Retry - Elements found:');
-            console.log('- pengerjaanSelect:', !!pengerjaanSelect);
+            console.log('- partNameInput:', !!partNameInput);
             console.log('- addPengerjaanBtn:', !!addPengerjaanBtn);
         }, 200);
     }
@@ -349,41 +357,36 @@ function initializeAlertCloseButtons() {
 // Setup pengerjaan handlers
 function setupPengerjaanHandlers() {
     // Check if elements exist
-    if (!addPengerjaanBtn || !clearPengerjaanBtn || !pengerjaanSelect) {
+    if (!addPengerjaanBtn || !clearPengerjaanBtn || !partNameInput || !partPriceInput) {
         console.error('Pengerjaan elements not found');
         console.log('addPengerjaanBtn:', addPengerjaanBtn);
         console.log('clearPengerjaanBtn:', clearPengerjaanBtn);
-        console.log('pengerjaanSelect:', pengerjaanSelect);
+        console.log('partNameInput:', partNameInput);
+        console.log('partPriceInput:', partPriceInput);
         return;
     }
     
     console.log('Setting up pengerjaan handlers - elements found');
     
-    // Add pengerjaan
+    // Auto-calculate service price when part price changes
+    partPriceInput.addEventListener('input', function() {
+        const partPrice = parseFloat(this.value) || 0;
+        const servicePrice = partPrice * 1.5;
+        servicePriceInput.value = servicePrice.toFixed(2);
+    });
+    
+    // Add pengerjaan item
     addPengerjaanBtn.addEventListener('click', function() {
         console.log('Add button clicked');
-        const selectedOptions = Array.from(pengerjaanSelect.selectedOptions);
-        const quantity = parseInt(itemQuantityInput.value) || 1;
-        
-        console.log('Selected options:', selectedOptions.length);
-        console.log('Quantity:', quantity);
-        
-        if (selectedOptions.length === 0) {
-            showErrorMessage('Silakan pilih item pengerjaan terlebih dahulu!');
-            return;
-        }
-        
-        selectedOptions.forEach(option => {
-            addPengerjaanItem(option.value, quantity);
-        });
-        
-        // Clear selection
-        pengerjaanSelect.selectedIndex = -1;
-        itemQuantityInput.value = 1;
-        
-        // Show success message
-        showSuccessAlert(`${selectedOptions.length} item berhasil ditambahkan ke pengerjaan!`);
+        addManualPengerjaanItem();
     });
+    
+    // Reset form
+    if (resetManualFormBtn) {
+        resetManualFormBtn.addEventListener('click', function() {
+            resetManualForm();
+        });
+    }
     
     // Clear pengerjaan
     clearPengerjaanBtn.addEventListener('click', function() {
@@ -400,45 +403,27 @@ function setupPengerjaanHandlers() {
         }
     });
     
-    // Enter key on quantity input
+    // Enter key handlers
+    partNameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            partPriceInput.focus();
+        }
+    });
+    
+    partPriceInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            itemQuantityInput.focus();
+        }
+    });
+    
     itemQuantityInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             addPengerjaanBtn.click();
         }
     });
-    
-    // Search functionality
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            filterPengerjaanOptions(this.value);
-        });
-        
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                // Auto-select first visible option if only one result
-                const visibleOptions = Array.from(pengerjaanSelect.options).filter(option => 
-                    !option.hidden && !option.disabled && option.value
-                );
-                if (visibleOptions.length === 1) {
-                    visibleOptions[0].selected = true;
-                    addPengerjaanBtn.click();
-                    searchInput.value = '';
-                    filterPengerjaanOptions('');
-                }
-            }
-        });
-    }
-    
-    // Clear search
-    if (clearSearchBtn) {
-        clearSearchBtn.addEventListener('click', function() {
-            searchInput.value = '';
-            filterPengerjaanOptions('');
-            searchInput.focus();
-        });
-    }
     
     // Tax rate change listener
     const taxRateInput = document.getElementById('taxRate');
@@ -449,39 +434,104 @@ function setupPengerjaanHandlers() {
     }
 }
 
-// Add pengerjaan item
-function addPengerjaanItem(value, quantity = 1) {
-    console.log('Adding pengerjaan item:', value, 'quantity:', quantity);
+// Add manual pengerjaan item
+function addManualPengerjaanItem() {
+    const partName = partNameInput.value.trim();
+    const partPrice = parseFloat(partPriceInput.value) || 0;
+    const servicePrice = parseFloat(servicePriceInput.value) || 0;
+    const quantity = parseInt(itemQuantityInput.value) || 1;
     
-    // Extract nama dan harga dari value (format: "NAMA|HARGA")
-    const parts = value.split('|');
-    if (parts.length !== 2) {
-        console.error('Invalid format:', value);
-        showErrorMessage('Format tidak valid. Pastikan format: "NAMA|HARGA"');
+    // Validation
+    if (!partName) {
+        showErrorMessage('Silakan masukkan nama part atau service!');
+        partNameInput.focus();
         return;
     }
     
-    const nama = parts[0].trim().toUpperCase();
-    const harga = parseFloat(parts[1]) || 0;
-    
-    console.log('Parsed - Nama:', nama, 'Harga:', harga);
-    
-    // Check if already exists
-    const exists = selectedPengerjaan.find(item => item.nama === nama);
-    if (exists) {
-        exists.quantity += quantity;
-        console.log('Updated quantity for:', nama, 'to', exists.quantity);
-    } else {
-        selectedPengerjaan.push({
-            nama: nama,
-            harga: harga,
-            quantity: quantity
-        });
-        console.log('Added new item:', nama);
+    if (partPrice <= 0 && servicePrice <= 0) {
+        showErrorMessage('Silakan masukkan harga part yang valid!');
+        partPriceInput.focus();
+        return;
     }
     
+    if (quantity < 1) {
+        showErrorMessage('Quantity minimal adalah 1!');
+        itemQuantityInput.focus();
+        return;
+    }
+    
+    // Total price is only the service price (part × 1.5)
+    const totalPricePerItem = servicePrice;
+    
+    // Create item object
+    const newItem = {
+        nama: partName.toUpperCase(),
+        partPrice: partPrice,
+        servicePrice: servicePrice,
+        totalPrice: totalPricePerItem,
+        quantity: quantity
+    };
+    
+    // Check if item already exists
+    const existingIndex = selectedPengerjaan.findIndex(item => item.nama === newItem.nama);
+    
+    if (existingIndex !== -1) {
+        // Update existing item - ask user if they want to add to quantity or replace
+        const existingItem = selectedPengerjaan[existingIndex];
+        const action = confirm(`${partName} sudah ada dalam daftar.\n\nKlik OK untuk menambah quantity (+${quantity})\nKlik Cancel untuk mengganti dengan data baru`);
+        
+        if (action) {
+            // Add to quantity
+            selectedPengerjaan[existingIndex].quantity += quantity;
+            showSuccessAlert(`Quantity untuk ${partName} berhasil ditambahkan! Total: ${selectedPengerjaan[existingIndex].quantity}`);
+        } else {
+            // Replace with new data
+            selectedPengerjaan[existingIndex] = newItem;
+            showSuccessAlert(`Data ${partName} berhasil diperbarui!`);
+        }
+    } else {
+        // Add new item
+        selectedPengerjaan.push(newItem);
+        showSuccessAlert(`${partName} berhasil ditambahkan ke pengerjaan!`);
+    }
+    
+    // Update display
     updatePengerjaanDisplay();
+    
+    // Reset form
+    resetManualForm();
 }
+
+// Reset manual form
+function resetManualForm() {
+    partNameInput.value = '';
+    partPriceInput.value = '';
+    servicePriceInput.value = '';
+    itemQuantityInput.value = 1;
+    partNameInput.focus();
+}
+
+// Apply preset values
+function applyPreset(partName, partPrice) {
+    if (partNameInput && partPriceInput && servicePriceInput) {
+        partNameInput.value = partName;
+        partPriceInput.value = partPrice.toFixed(2);
+        
+        // Auto-calculate service price
+        const servicePrice = partPrice * 1.5;
+        servicePriceInput.value = servicePrice.toFixed(2);
+        
+        // Focus on quantity input
+        if (itemQuantityInput) {
+            itemQuantityInput.focus();
+        }
+        
+        showSuccessAlert(`Preset ${partName} berhasil diterapkan! Part: $${partPrice} + Service: $${servicePrice.toFixed(2)}`);
+    }
+}
+
+// Make applyPreset globally accessible
+window.applyPreset = applyPreset;
 
 // Update pengerjaan display
 function updatePengerjaanDisplay() {
@@ -491,13 +541,13 @@ function updatePengerjaanDisplay() {
     totalHarga = 0;
     
     selectedPengerjaan.forEach(item => {
-        const subtotal = item.harga * item.quantity;
-        totalHarga += subtotal;
+        const itemTotal = item.totalPrice * item.quantity;
+        totalHarga += itemTotal;
         
         if (item.quantity > 1) {
-            text += `${item.nama} ${item.quantity}x, `;
+            text += `${item.nama} ${item.quantity}x ($${item.servicePrice.toFixed(2)}), `;
         } else {
-            text += `${item.nama}, `;
+            text += `${item.nama} ($${item.servicePrice.toFixed(2)}), `;
         }
     });
     
@@ -555,12 +605,12 @@ function updateSelectedItemsDisplay() {
     let html = '<h4 style="margin: 0 0 10px 0; color: #333;">Selected Items:</h4>';
     
     selectedPengerjaan.forEach((item, index) => {
-        const subtotal = item.harga * item.quantity;
+        const subtotal = item.totalPrice * item.quantity;
         html += `
             <div class="selected-item">
                 <div class="selected-item-info">
                     <span class="selected-item-name">${item.nama}</span>
-                    <span class="selected-item-price">$${item.harga.toFixed(2)} each</span>
+                    <span class="selected-item-price">Part: $${item.partPrice.toFixed(2)} → Service: $${item.servicePrice.toFixed(2)} (Part × 1.5)</span>
                 </div>
                 <div class="quantity-controls">
                     <button type="button" class="qty-btn" onclick="changeQuantity(${index}, -1)">-</button>
@@ -591,87 +641,6 @@ function removeItem(index) {
     if (selectedPengerjaan[index]) {
         selectedPengerjaan.splice(index, 1);
         updatePengerjaanDisplay();
-    }
-}
-
-// Filter pengerjaan options based on search
-function filterPengerjaanOptions(searchTerm) {
-    if (!pengerjaanSelect) return;
-    
-    const options = pengerjaanSelect.querySelectorAll('option');
-    const optgroups = pengerjaanSelect.querySelectorAll('optgroup');
-    let hasVisibleResults = false;
-    
-    // Convert search term to lowercase for case-insensitive search
-    const search = searchTerm.toLowerCase().trim();
-    
-    if (search === '') {
-        // Show all options if search is empty
-        options.forEach(option => {
-            option.hidden = false;
-            option.classList.remove('search-highlight');
-        });
-        optgroups.forEach(optgroup => {
-            optgroup.hidden = false;
-        });
-        return;
-    }
-    
-    // Hide all optgroups first
-    optgroups.forEach(optgroup => {
-        optgroup.hidden = true;
-    });
-    
-    // Filter options
-    options.forEach(option => {
-        if (!option.value) {
-            option.hidden = true;
-            return;
-        }
-        
-        const optionText = option.textContent.toLowerCase();
-        const searchData = option.dataset.search ? option.dataset.search.toLowerCase() : '';
-        const optionValue = option.value.toLowerCase();
-        
-        // Check if search term matches option text, search data, or value
-        const matches = optionText.includes(search) || 
-                       searchData.includes(search) || 
-                       optionValue.includes(search);
-        
-        if (matches) {
-            option.hidden = false;
-            option.classList.add('search-highlight');
-            hasVisibleResults = true;
-            
-            // Show parent optgroup
-            const parentOptgroup = option.closest('optgroup');
-            if (parentOptgroup) {
-                parentOptgroup.hidden = false;
-            }
-        } else {
-            option.hidden = true;
-            option.classList.remove('search-highlight');
-        }
-    });
-    
-    // Show message if no results
-    if (!hasVisibleResults) {
-        console.log('No results found for:', searchTerm);
-        // You could add a "no results" option here if needed
-    }
-    
-    // Update clear search button visibility
-    if (clearSearchBtn) {
-        clearSearchBtn.style.display = search ? 'block' : 'none';
-    }
-}
-
-// Quick search shortcuts
-function quickSearch(category) {
-    if (searchInput) {
-        searchInput.value = category;
-        filterPengerjaanOptions(category);
-        searchInput.focus();
     }
 }
 
@@ -1654,7 +1623,7 @@ function initializeMainApp() {
     
     // Additional retry mechanism for critical elements
     setTimeout(function() {
-        if (!addPengerjaanBtn || !pengerjaanSelect) {
+        if (!addPengerjaanBtn || !partNameInput) {
             console.log('Retrying element initialization...');
             initializePengerjaanElements();
             setupPengerjaanHandlers();
@@ -1705,70 +1674,31 @@ function getMainAppHTML() {
                             <div class="form-group">
                                 <label for="pengerjaan">Pengerjaan:</label>
                                 <div class="pengerjaan-container">
-                                    <div class="search-container">
-                                        <input type="text" id="searchPengerjaan" placeholder="🔍 Cari item pengerjaan..." class="search-input">
-                                        <button type="button" id="clearSearch" class="clear-search-btn">✖️</button>
-                                    </div>
-                                    <select id="pengerjaanSelect" class="pengerjaan-select" multiple size="8">
-                                        <optgroup label="SERVICES">
-                                            <option value="ENGINE OIL|50" data-search="engine oil services">ENGINE OIL - $50</option>
-                                            <option value="AIR FILTER|100" data-search="air filter services">AIR FILTER - $100</option>
-                                            <option value="SPARK PLUG|50" data-search="spark plug services">SPARK PLUG - $50</option>
-                                            <option value="CLEANING KIT|50" data-search="cleaning kit services">CLEANING KIT - $50</option>
-                                            <option value="DUCT TAPE|50" data-search="duct tape services">DUCT TAPE - $50</option>
-                                        </optgroup>
-                                        <optgroup label="BRAKE TYPE">
-                                            <option value="BRAKEPAD|350" data-search="brakepad brake type">BRAKEPAD - $350</option>
-                                            <option value="SUSPENSION PART|400" data-search="suspension part brake type">SUSPENSION PART - $400</option>
-                                            <option value="TYRE REPLACEMENT|350" data-search="tyre replacement brake type">TYRE REPLACEMENT - $350</option>
-                                            <option value="SLICK TYRES|600" data-search="slick tyres brake type">SLICK TYRES - $600</option>
-                                            <option value="SEMI SLICK TYRES|550" data-search="semi slick tyres brake type">SEMI SLICK TYRES - $550</option>
-                                            <option value="OFFROAD TYRES|500" data-search="offroad tyres brake type">OFFROAD TYRES - $500</option>
-                                            <option value="BULLETPROOF TYRES|6000" data-search="bulletproof tyres brake type">BULLETPROOF TYRES - $6,000</option>
-                                            <option value="VEHICLE WHEELS|900" data-search="vehicle wheels brake type">VEHICLE WHEELS - $900</option>
-                                            <option value="TYRE SMOKE KIT|400" data-search="tyre smoke kit brake type">TYRE SMOKE KIT - $400</option>
-                                        </optgroup>
-                                        <optgroup label="ENGINE DRIVETRAIN">
-                                            <option value="CLUTCH REPLACEMENT|400" data-search="clutch replacement brake type">CLUTCH REPLACEMENT - $400</option>
-                                            <option value="I4 ENGINE|6600" data-search="i4 engine drivetrain">I4 ENGINE - $6,600</option>
-                                            <option value="V6 ENGINE|6600" data-search="v6 engine drivetrain">V6 ENGINE - $6,600</option>
-                                            <option value="V8 ENGINE|12000" data-search="v8 engine drivetrain">V8 ENGINE - $12,000</option>
-                                            <option value="V12 ENGINE|24000" data-search="v12 engine drivetrain">V12 ENGINE - $24,000</option>
-                                            <option value="TURBOCHARGER|7500" data-search="turbocharger engine drivetrain">TURBOCHARGER - $7,500</option>
-                                            <option value="MANUAL GEARBOX|5100" data-search="manual gearbox engine drivetrain">MANUAL GEARBOX - $5,100</option>
-                                            <option value="AWD|5400" data-search="awd engine drivetrain">AWD - $5,400</option>
-                                            <option value="RWD|4500" data-search="rwd engine drivetrain">RWD - $4,500</option>
-                                            <option value="FWD|3600" data-search="fwd engine drivetrain">FWD - $3,600</option>
-                                        </optgroup>
-                                        <optgroup label="EV">
-                                            <option value="EV MOTOR|9000" data-search="ev motor electric">EV MOTOR - $9,000</option>
-                                            <option value="EV BATTERY|7500" data-search="ev battery electric">EV BATTERY - $7,500</option>
-                                            <option value="EV COOLANT|200" data-search="ev coolant electric">EV COOLANT - $200</option>
-                                        </optgroup>
-                                        <optgroup label="PERFORMANCE">
-                                            <option value="PERFORMANCE PART|1500" data-search="performance part">PERFORMANCE PART - $1,500</option>
-                                            <option value="DRIFT TUNING KIT|3000" data-search="drift tuning kit performance">DRIFT TUNING KIT - $3,000</option>
-                                            <option value="CERAMIC BRAKES|4500" data-search="ceramic brakes performance">CERAMIC BRAKES - $4,500</option>
-                                            <option value="NITROUS BOTTLE|300" data-search="nitrous bottle performance">NITROUS BOTTLE - $300</option>
-                                            <option value="EMPTY NITROUS BOTTLE|100" data-search="empty nitrous bottle performance">EMPTY NITROUS BOTTLE - $100</option>
-                                            <option value="NITROUS INSTALL KIT|500" data-search="nitrous install kit performance">NITROUS INSTALL KIT - $500</option>
-                                        </optgroup>
-                                        <optgroup label="TOOL">
-                                            <option value="MECH TABLET|300" data-search="mech tablet tool">MECH TABLET - $300</option>
-                                            <option value="LIGHTING CONTROLLER|500" data-search="lighting controller tool">LIGHTING CONTROLLER - $500</option>
-                                        </optgroup>
-                                        <optgroup label="VISUAL MODIF">
-                                            <option value="STANCING KIT|2500" data-search="stancing kit tool">STANCING KIT - $2,500</option>
-                                            <option value="COSMETIC PART|300" data-search="cosmetic part visual modif">COSMETIC PART - $300</option>
-                                            <option value="RESPRAY KIT|250" data-search="respray kit visual modif">RESPRAY KIT - $250</option>
-                                            <option value="EXTRAS KIT|800" data-search="extras kit visual modif">EXTRAS KIT - $800</option>
-                                        </optgroup>
-                                    </select>
-                                    <div class="pengerjaan-controls">
-                                        <button type="button" id="addPengerjaan" class="add-btn">➕ Tambah Selected</button>
-                                        <div class="quantity-control">
-                                            <label for="itemQuantity">Qty:</label>
-                                            <input type="number" id="itemQuantity" value="1" min="1" max="99">
+                                    <div class="manual-pengerjaan-container">
+                                        
+                                        <div class="input-row">
+                                            <div class="input-group">
+                                                <label for="partName">Nama Part/Service:</label>
+                                                <input type="text" id="partName" placeholder="Masukkan nama part atau service..." class="part-input">
+                                            </div>
+                                            <div class="input-group">
+                                                <label for="partPrice">Harga Part ($):</label>
+                                                <input type="number" id="partPrice" placeholder="0.00" step="0.01" min="0" class="price-input">
+                                            </div>
+                                        </div>
+                                        <div class="input-row">
+                                            <div class="input-group">
+                                                <label for="servicePrice">Harga Final - Service (Auto: Part × 1.5):</label>
+                                                <input type="number" id="servicePrice" placeholder="0.00" step="0.01" min="0" class="price-input" readonly>
+                                            </div>
+                                            <div class="input-group">
+                                                <label for="itemQuantity">Quantity:</label>
+                                                <input type="number" id="itemQuantity" value="1" min="1" max="99" class="quantity-input">
+                                            </div>
+                                        </div>
+                                        <div class="pengerjaan-controls">
+                                            <button type="button" id="addPengerjaan" class="add-btn">➕ Tambah Item</button>
+                                            <button type="button" id="resetManualForm" class="reset-btn">🔄 Reset Form</button>
                                         </div>
                                     </div>
                                 </div>
