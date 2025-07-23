@@ -570,6 +570,9 @@ function updatePengerjaanDisplay() {
     
     // Update selected items display
     updateSelectedItemsDisplay();
+    
+    // Update original prices list and modal
+    updateOriginalPricesAndModal();
 }
 
 // Update tax calculations
@@ -623,6 +626,48 @@ function updateSelectedItemsDisplay() {
     });
     
     selectedItemsDiv.innerHTML = html;
+}
+
+// Update original prices list and modal total
+function updateOriginalPricesAndModal() {
+    const originalPricesList = document.getElementById('originalPricesList');
+    const modalInput = document.getElementById('modal');
+    
+    if (!originalPricesList || !modalInput) return;
+    
+    if (selectedPengerjaan.length === 0) {
+        originalPricesList.innerHTML = '';
+        modalInput.value = '0';
+        return;
+    }
+    
+    let totalOriginalPrice = 0;
+    let html = '<div class="original-prices-header"><strong>🏷️ Harga Asli Parts:</strong></div>';
+    
+    selectedPengerjaan.forEach((item, index) => {
+        const originalTotal = item.partPrice * item.quantity;
+        totalOriginalPrice += originalTotal;
+        
+        html += `
+            <div class="original-price-item">
+                <span class="item-name">${item.nama}</span>
+                ${item.quantity > 1 ? `<span class="item-qty">${item.quantity}x</span>` : ''}
+                <span class="item-original-price">$${item.partPrice.toFixed(2)}</span>
+                ${item.quantity > 1 ? `<span class="item-total">= $${originalTotal.toFixed(2)}</span>` : ''}
+            </div>
+        `;
+    });
+    
+    html += `
+        <div class="original-prices-total">
+            <strong>Total Modal: $${totalOriginalPrice.toFixed(2)}</strong>
+        </div>
+    `;
+    
+    originalPricesList.innerHTML = html;
+    
+    // Auto-update modal input
+    modalInput.value = totalOriginalPrice.toFixed(2);
 }
 
 // Change quantity of selected item
@@ -1711,6 +1756,7 @@ function getMainAppHTML() {
                             </div>
                             <div class="form-group">
                                 <label for="modal">Modal:</label>
+                                <div id="originalPricesList" class="original-prices-list" style="margin-bottom: 10px;"></div>
                                 <input type="number" id="modal" name="modal" step="0.01" value="0" required>
                             </div>
                             <div class="form-group">
